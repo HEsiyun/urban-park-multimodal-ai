@@ -1,5 +1,8 @@
 # app.py
+
 from __future__ import annotations
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 from datetime import datetime
 from typing import Any, Dict, Optional
 
@@ -63,5 +66,5 @@ def agent_answer(req: AgentReq):
     
     # 3. 生成最终答案
     ans =  compose_answer(nlu_result, state)
-    print("Final Answer:", ans["answer_md"])
+    # print("Final Answer:", ans["answer_md"])
     return ans

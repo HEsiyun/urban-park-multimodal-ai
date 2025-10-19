@@ -14,7 +14,7 @@ except ImportError:
 # 配置：使用本地 Ollama 或 OpenAI
 USE_LOCAL_LLM = True  # True = Ollama, False = OpenAI
 OLLAMA_BASE_URL = "http://localhost:11434/v1"
-OLLAMA_MODEL = "mistral" #"llama3.2:3b"  # 或 "mistral", "phi3"
+OLLAMA_MODEL = "phi3:medium-128k" # "wizard-math:7b"  "mistral" "llama3.2:3b"  或 "mistral", "phi3"
 OPENAI_MODEL = "gpt-4o-mini"
 
 
@@ -143,8 +143,7 @@ Reference Documents:
 
 Task: You will find dimension data for a list of fields from the SQL Query Result. The reference document provides the criteria for the certain dimensions.
 Compare the dimension data from the SQL results against the criteria mentioned in the reference documents.
-List the differences for each criterion for each field: e.g. "Field Name: Home to Pitch is 13.5m (within range); Home to First Base is 18.0m (out of range by 0.2m)".
-
+List the differences for each criterion for each field.
 
 Keep it concise and directly relevant to the user's question. Use markdown formatting."""
         else:

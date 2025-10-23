@@ -1,0 +1,10 @@
+__pycache__/app.cpython-311.pyc
+__pycache__/app.cpython-311.pyc
+__pycache__/composer.cpython-311.pyc
+__pycache__/config.cpython-311.pyc
+__pycache__/cv_tool.cpython-311.pyc
+__pycache__/executor.cpython-311.pyc
+__pycache__/nlu.cpython-311.pyc
+__pycache__/rag.cpython-311.pyc
+__pycache__/sql_tool.cpython-311.pyc
+data/mowing.duckdb

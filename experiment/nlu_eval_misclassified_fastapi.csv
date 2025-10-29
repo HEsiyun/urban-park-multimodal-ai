@@ -1,0 +1,16 @@
+text,image_uri,label,pred_intent
+Report mowing labor hours by week for March 2024 and explain spikes based on staffing policy.,,RAG+SQL_tool,SQL_tool
+Compare irrigation repair costs across three parks for Q2 2024 and discuss likely drivers.,,RAG+SQL_tool,SQL_tool
+Show monthly fertilizer expenses in 2023 and explain seasonality from maintenance guidelines.,,RAG+SQL_tool,SQL_tool
+Compute YOY change for playground maintenance cost in July and connect to inspection cycles.,,RAG+SQL_tool,SQL_tool
+Return the median mowing cost per park for Q3 2024 and interpret outliers using SOP ranges.,,RAG+SQL_tool,RAG
+List parks with zero hedge-trimming in May and discuss whether this aligns with schedules.,,RAG+SQL_tool,SQL_tool
+Provide a monthly series for drainage repair costs in 2023 and explain anomalies with citations.,,RAG+SQL_tool,SQL_tool
+Break down October field renovation costs by activity and add brief rationale for differences.,,RAG+SQL_tool,RAG
+Analyze the picture for drainage symptoms and provide corrective actions with citations.,file://example_image.jpg,RAG+CV_tool,CV_tool
+Rate overall field playability from 1–5 using the image only.,file://example_image.jpg,CV_tool,RAG+CV_tool
+Detect visible debris in the photo and return a boolean.,file://example_image.jpg,CV_tool,RAG+CV_tool
+Detect mower scalping in this image and return yes/no.,file://example_image.jpg,CV_tool,RAG+CV_tool
+Output last mowing date per park for July as rows only; no explanation.,,SQL_tool,RAG+SQL_tool
+Produce a pivot table of 2024 costs comparing baseball vs soccer fields; no text.,,SQL_tool,RAG
+Return boxplot statistics of maintenance hours for July; quartiles only.,,SQL_tool,RAG

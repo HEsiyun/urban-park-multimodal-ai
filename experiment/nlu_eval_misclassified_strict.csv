@@ -1,0 +1,13 @@
+text,image_uri,label,pred_intent
+What are the basic turf maintenance rules for summer?,,RAG,RAG+SQL_tool
+Summarize recommended post-mowing cleanup procedures.,,RAG,RAG+SQL_tool
+Show total mowing cost by park for Q2 2025.,,SQL_tool,RAG+SQL_tool
+Display mowing frequency by park for July.,,SQL_tool,RAG+SQL_tool
+Evaluate high mowing cost trends with respect to staff allocation norms.,,RAG+SQL_tool,SQL_tool
+Analyze this field photo and describe what maintenance should be scheduled.,file://example_image.jpg,RAG+CV_tool,CV_tool
+"Based on this photo, suggest next maintenance steps referencing mowing frequency rules.",file://example_image.jpg,RAG+CV_tool,RAG+SQL_tool
+Rate the field surface from this picture.,file://example_image.jpg,CV_tool,SQL_tool
+Assess turf evenness from the provided image.,file://example_image.jpg,CV_tool,SQL_tool
+Judge mowing quality in this field picture.,file://example_image.jpg,CV_tool,RAG+CV_tool
+"From this image, rate turf density from 1 to 5.",file://example_image.jpg,CV_tool,SQL_tool
+Visually estimate mowing height from the image only.,file://example_image.jpg,CV_tool,SQL_tool

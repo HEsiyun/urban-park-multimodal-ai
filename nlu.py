@@ -88,12 +88,37 @@ _SQL_EXPLAIN_CUES = [
     "commentary", "insights", "insight"
 ]
 
+# General analysis cues that usually imply a structured SQL answer,
+# but do not explicitly request explanations.
+_SQL_GENERAL_CUES = [
+    "trend", "compare", "median", "top", "highest", "max",
+    "yoy", "year over year", "last", "recent", "rank", "breakdown"
+]
+
 # Informational textual guidance cues (only used when not SQL-intent)
 _INFORMATIONAL_KEYWORDS = [
     "steps", "procedure", "safety", "manual", "how to", "sop",
     "dimensions", "requirements", "standards", "what are", "show me", "tell me"
 ]
 
+# Extra policy/standard cues that imply explanatory grounding (all lowercase)
+_RAG_POLICY_CUES = [
+    "standard", "standards", "guideline", "guidelines",
+    "policy", "policies", "threshold", "thresholds",
+    "interval", "intervals", "frequency", "frequencies",
+    "requirement", "requirements"
+]
+
+# Text mentions that imply the user is talking about or expecting an image
+_CV_TEXT_CUES = ["image", "photo", "picture", "screenshot", "attached", "see image", "see pic"]
+
+# Broad data cues: words that commonly indicate a structured/quantitative ask
+_DATA_CUES = [
+    "cost", "costs", "hours", "count", "counts", "visits", "median", "mean", "average",
+    "total", "sum", "trend", "compare", "top", "highest", "max", "rank", "last", "date",
+    "per park", "by park", "per month", "by month", "yoy", "year over year", "histogram",
+    "table", "csv", "series"
+]
 # ========== ENTITY EXTRACTION UTILITIES ==========
 _MONTHS = {
     m: i for i, m in enumerate(
@@ -244,16 +269,58 @@ def parse_intent_and_slots(
     confidence = float(similarities[best_idx])
     print(f"[NLU] Initial intent: {intent} (confidence: {confidence:.3f})")
 
-    # ----- STEP 2: SQL cues take priority (no downgrade to RAG) -----
+    # ----- Enhancement A: Low-confidence fallback -----
+    LOW_CONF = 0.35  # tune 0.30~0.45 based on evaluation
+    if confidence < LOW_CONF:
+        intent = "RAG+CV_tool" if image_uri else "RAG"
+        print(f"[NLU] Low confidence ({confidence:.3f}) → fallback to {intent}")
+
+    # ----- STEP 2: SQL/CV routing with combined cues and image awareness -----
     explanation_requested = False
-    if any(k in lowq for k in _SQL_ONLY_CUES):
+
+    # Cue booleans
+    has_sql_only    = any(k in lowq for k in _SQL_ONLY_CUES)
+    has_sql_general = any(k in lowq for k in _SQL_GENERAL_CUES)
+    has_data_cues   = any(k in lowq for k in _DATA_CUES)
+    has_sql_query   = has_sql_only or has_sql_general or has_data_cues
+
+    has_explain_kw  = any(k in lowq for k in _SQL_EXPLAIN_CUES)
+    has_info_kw     = any(k in lowq for k in _INFORMATIONAL_KEYWORDS)
+    has_policy_kw   = any(k in lowq for k in _RAG_POLICY_CUES)
+
+    has_image_flag  = bool(image_uri)
+    mentions_image  = any(k in lowq for k in _CV_TEXT_CUES)
+    cv_context      = has_image_flag or mentions_image
+
+    # 1) Hard SQL-only always wins: explicit table/SQL syntax requests
+    if has_sql_only:
         intent = "SQL_tool"
         explanation_requested = False
         print("[NLU] SQL-only cues detected → intent=SQL_tool")
-    elif any(k in lowq for k in _SQL_EXPLAIN_CUES):
+
+    # 2) If user is in a CV context (image present or text mentions an image)
+    #    then prefer CV path unless it's truly SQL-only.
+    elif cv_context:
+        # If the ask also mixes data analysis with explanations/policy, keep it multimodal
+        if has_sql_query and (has_explain_kw or has_policy_kw or has_info_kw):
+            intent = "RAG+CV_tool"
+            explanation_requested = True
+            print("[NLU] CV context + (data+explain/policy/info) → intent=RAG+CV_tool")
+        else:
+            # otherwise leave as-is (RAG) and let Step 4 upgrade to RAG+CV_tool
+            print("[NLU] CV context detected; defer to Step 4 for potential upgrade")
+
+    # 3) No CV context. Combine SQL signals with explanatory/policy intent → RAG+SQL_tool
+    elif has_sql_query and (has_explain_kw or has_policy_kw or has_info_kw):
         intent = "RAG+SQL_tool"
         explanation_requested = True
-        print("[NLU] SQL-explain cues detected → intent=RAG+SQL_tool")
+        print("[NLU] SQL + (policy/info/explain) detected → intent=RAG+SQL_tool")
+
+    # 4) Plain SQL-general without explanation/policy → SQL_tool
+    elif has_sql_general:
+        intent = "SQL_tool"
+        print("[NLU] SQL-general cues detected → intent=SQL_tool")
+
 
     # ----- STEP 3: Informational fallback (only if not SQL) -----
     if intent not in ("SQL_tool", "RAG+SQL_tool"):
@@ -268,7 +335,7 @@ def parse_intent_and_slots(
         if intent == "RAG":
             intent = "RAG+CV_tool"
             print("[NLU] Image detected; upgrading RAG → RAG+CV_tool")
-        # If intent is SQL_tool / RAG+SQL_tool, do NOT force to CV; we keep SQL path.
+        # If intent is SQL_tool / RAG+SQL_tool, do NOT force to CV; keep SQL path.
     else:
         # No image but predicted a CV intent → downgrade to RAG (textual fallback).
         if "CV" in intent:

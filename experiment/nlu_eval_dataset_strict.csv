@@ -1,0 +1,51 @@
+text,image_uri,label,pred_intent
+Describe the correct process for trimming park lawns.,,RAG,RAG
+How should mowing blades be adjusted for safety?,,RAG,RAG
+What are the basic turf maintenance rules for summer?,,RAG,RAG+SQL_tool
+Give me the official mowing protocol for public fields.,,RAG,RAG
+Outline how to prepare turf before large events.,,RAG,RAG
+Explain how to safely refuel and clean a mower.,,RAG,RAG
+List inspection steps before operating mowing equipment.,,RAG,RAG
+What is the standard grass height for soccer practice areas?,,RAG,RAG
+How often should turf be aerated under heavy use?,,RAG,RAG
+Summarize recommended post-mowing cleanup procedures.,,RAG,RAG+SQL_tool
+Show total mowing cost by park for Q2 2025.,,SQL_tool,RAG+SQL_tool
+Give me average mowing hours per week this May.,,SQL_tool,SQL_tool
+List top 10 parks by irrigation repair cost.,,SQL_tool,SQL_tool
+Display mowing frequency by park for July.,,SQL_tool,RAG+SQL_tool
+Fetch the park with the lowest mowing expense in April.,,SQL_tool,SQL_tool
+Return number of mowing operations completed last month.,,SQL_tool,SQL_tool
+Provide total maintenance cost for June 2025 as a table.,,SQL_tool,SQL_tool
+Show ranking of parks by total mowing labor hours.,,SQL_tool,SQL_tool
+Get monthly mowing expenses for each district.,,SQL_tool,SQL_tool
+List mean and median mowing cost per park this quarter.,,SQL_tool,SQL_tool
+Interpret why mowing expenses increased in April compared to March using mowing policies.,,RAG+SQL_tool,RAG+SQL_tool
+Explain cost variation across parks based on mowing interval recommendations.,,RAG+SQL_tool,RAG+SQL_tool
+Discuss if July mowing costs align with approved maintenance frequency.,,RAG+SQL_tool,RAG+SQL_tool
+Analyze whether irrigation spending in Q2 follows standard repair schedules.,,RAG+SQL_tool,RAG+SQL_tool
+Evaluate high mowing cost trends with respect to staff allocation norms.,,RAG+SQL_tool,SQL_tool
+Provide reasoning for decreased mowing hours using turf condition policies.,,RAG+SQL_tool,RAG+SQL_tool
+Assess if August mowing data matches standard seasonal frequency.,,RAG+SQL_tool,RAG+SQL_tool
+Discuss correlation between mowing labor cost and weather conditions referencing SOPs.,,RAG+SQL_tool,RAG+SQL_tool
+Explain cost efficiency differences among parks using mowing best practices.,,RAG+SQL_tool,RAG+SQL_tool
+Summarize if Q3 2024 mowing costs meet operational benchmarks.,,RAG+SQL_tool,RAG+SQL_tool
+Look at this picture and explain whether mowing is due according to standards.,file://example_image.jpg,RAG+CV_tool,RAG+CV_tool
+"From this image, judge turf quality and reference mowing policy.",file://example_image.jpg,RAG+CV_tool,RAG+CV_tool
+Analyze this field photo and describe what maintenance should be scheduled.,file://example_image.jpg,RAG+CV_tool,CV_tool
+Check this image and tell me if mowing height meets the guideline.,file://example_image.jpg,RAG+CV_tool,RAG+CV_tool
+Use the picture to determine soil compaction and recommend action per SOP.,file://example_image.jpg,RAG+CV_tool,RAG+CV_tool
+"Based on this photo, suggest next maintenance steps referencing mowing frequency rules.",file://example_image.jpg,RAG+CV_tool,RAG+SQL_tool
+Examine this image and cite mowing procedures relevant to visible damage.,file://example_image.jpg,RAG+CV_tool,RAG+CV_tool
+Review this field photo and discuss mowing uniformity with reference to regulation height.,file://example_image.jpg,RAG+CV_tool,RAG+CV_tool
+"Using this image, decide if the area needs mowing per standard thresholds.",file://example_image.jpg,RAG+CV_tool,RAG+CV_tool
+Assess this picture and explain maintenance tasks according to policy.,file://example_image.jpg,RAG+CV_tool,RAG+CV_tool
+Evaluate the turf condition shown in this image.,file://example_image.jpg,CV_tool,CV_tool
+Rate the field surface from this picture.,file://example_image.jpg,CV_tool,SQL_tool
+Identify visible issues in the uploaded photo.,file://example_image.jpg,CV_tool,CV_tool
+Assess turf evenness from the provided image.,file://example_image.jpg,CV_tool,SQL_tool
+Judge mowing quality in this field picture.,file://example_image.jpg,CV_tool,RAG+CV_tool
+"From this image, rate turf density from 1 to 5.",file://example_image.jpg,CV_tool,SQL_tool
+Detect any bare patches in this photo.,file://example_image.jpg,CV_tool,CV_tool
+Check if the grass appears overgrown in this image.,file://example_image.jpg,CV_tool,CV_tool
+Classify the field condition based on the picture.,file://example_image.jpg,CV_tool,CV_tool
+Visually estimate mowing height from the image only.,file://example_image.jpg,CV_tool,SQL_tool

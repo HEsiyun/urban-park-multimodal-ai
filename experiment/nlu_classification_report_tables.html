@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classification Report</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        h2 {
+            text-align: center;
+            color: #1a1a1a;
+            font-size: 24px;
+            margin-bottom: 30px;
+            font-weight: normal;
+        }
+        
+        .table-caption {
+            font-weight: bold;
+            margin-top: 30px;
+            margin-bottom: 10px;
+            color: #1a1a1a;
+            font-size: 14px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 35px;
+            font-size: 13px;
+            background-color: white;
+        }
+        
+        th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px 8px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #34495e;
+        }
+        
+        th:first-child {
+            text-align: left;
+            padding-left: 12px;
+        }
+        
+        td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        
+        td:first-child {
+            text-align: left;
+            font-weight: 500;
+            padding-left: 12px;
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        tbody tr:hover {
+            background-color: #e9ecef;
+        }
+        
+        .overall-row {
+            background-color: #ecf0f1 !important;
+            font-weight: bold;
+        }
+        
+        .note {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+            margin-top: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .confusion-section {
+            margin-top: 40px;
+        }
+        
+        .confusion-table {
+            font-size: 12px;
+        }
+        
+        .confusion-table td {
+            text-align: left;
+            padding: 10px;
+            vertical-align: top;
+        }
+        
+        .confusion-table .class-name {
+            font-weight: bold;
+            width: 140px;
+            background-color: #f8f9fa;
+        }
+        
+        .confusion-table .confusion-to {
+            width: 200px;
+        }
+        
+        .example-text {
+            color: #555;
+            font-style: italic;
+            margin-left: 15px;
+            line-height: 1.5;
+        }
+        
+        .summary-box {
+            background-color: #f8f9fa;
+            border-left: 3px solid #2c3e50;
+            padding: 15px 20px;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-box h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+        
+        .summary-item {
+            margin: 8px 0;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Classification Model Performance Report</h2>
+    
+    <div class="table-caption">Table 1: Per-Class Performance Metrics</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Class</th>
+                <th>Precision</th>
+                <th>Recall</th>
+                <th>F1-Score</th>
+                <th>Support</th>
+                <th>Accuracy</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>RAG</td>
+                <td>1.000</td>
+                <td>0.800</td>
+                <td>0.889</td>
+                <td>10</td>
+                <td>0.800</td>
+            </tr>
+            <tr>
+                <td>RAG+SQL_tool</td>
+                <td>0.643</td>
+                <td>0.900</td>
+                <td>0.750</td>
+                <td>10</td>
+                <td>0.900</td>
+            </tr>
+            <tr>
+                <td>RAG+CV_tool</td>
+                <td>0.889</td>
+                <td>0.800</td>
+                <td>0.842</td>
+                <td>10</td>
+                <td>0.800</td>
+            </tr>
+            <tr>
+                <td>CV_tool</td>
+                <td>0.833</td>
+                <td>0.500</td>
+                <td>0.625</td>
+                <td>10</td>
+                <td>0.500</td>
+            </tr>
+            <tr>
+                <td>SQL_tool</td>
+                <td>0.615</td>
+                <td>0.800</td>
+                <td>0.696</td>
+                <td>10</td>
+                <td>0.800</td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="note">Note: All metrics are reported on a test set of 50 samples (10 per class).</div>
+
+    <div class="table-caption">Table 2: Overall Performance Summary</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Metric</th>
+                <th>Precision</th>
+                <th>Recall</th>
+                <th>F1-Score</th>
+                <th>Support</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="overall-row">
+                <td>Overall Accuracy</td>
+                <td colspan="3">0.760</td>
+                <td>50</td>
+            </tr>
+            <tr>
+                <td>Macro Average</td>
+                <td>0.800</td>
+                <td>0.760</td>
+                <td>0.760</td>
+                <td>50</td>
+            </tr>
+            <tr>
+                <td>Weighted Average</td>
+                <td>0.800</td>
+                <td>0.760</td>
+                <td>0.760</td>
+                <td>50</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="confusion-section">
+        <div class="table-caption">Table 3: Classification Error Analysis</div>
+        <table class="confusion-table">
+            <thead>
+                <tr>
+                    <th>True Class</th>
+                    <th>Errors</th>
+                    <th>Misclassified As</th>
+                    <th>Example Misclassifications</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="class-name">RAG</td>
+                    <td>2</td>
+                    <td class="confusion-to">RAG+SQL_tool (2)</td>
+                    <td>
+                        <div class="example-text">• What are the basic turf maintenance rules for summer?</div>
+                        <div class="example-text">• Summarize recommended post-mowing cleanup procedures.</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="class-name">RAG+SQL_tool</td>
+                    <td>1</td>
+                    <td class="confusion-to">SQL_tool (1)</td>
+                    <td>
+                        <div class="example-text">• Evaluate high mowing cost trends with respect to staff allocation norms.</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="class-name">RAG+CV_tool</td>
+                    <td>2</td>
+                    <td class="confusion-to">CV_tool (1)<br>RAG+SQL_tool (1)</td>
+                    <td>
+                        <div class="example-text">• Analyze this field photo and describe what maintenance should be scheduled.</div>
+                        <div class="example-text">• Based on this photo, suggest next maintenance steps referencing mowing frequency rules.</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="class-name">CV_tool</td>
+                    <td>5</td>
+                    <td class="confusion-to">SQL_tool (4)<br>RAG+CV_tool (1)</td>
+                    <td>
+                        <div class="example-text">• Rate the field surface from this picture.</div>
+                        <div class="example-text">• Assess turf evenness from the provided image.</div>
+                        <div class="example-text">• Judge mowing quality in this field picture.</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="class-name">SQL_tool</td>
+                    <td>2</td>
+                    <td class="confusion-to">RAG+SQL_tool (2)</td>
+                    <td>
+                        <div class="example-text">• Show total mowing cost by park for Q2 2025.</div>
+                        <div class="example-text">• Display mowing frequency by park for July.</div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="summary-box">
+        <h3>Key Observations</h3>
+        <div class="summary-item"><strong>Highest Precision:</strong> RAG class (1.000) demonstrates no false positive predictions.</div>
+        <div class="summary-item"><strong>Highest Recall:</strong> RAG+SQL_tool class (0.900) shows the best sensitivity with minimal false negatives.</div>
+        <div class="summary-item"><strong>Best F1-Score:</strong> RAG class (0.889) achieves the best balance between precision and recall.</div>
+        <div class="summary-item"><strong>Major Confusion Pattern:</strong> CV_tool frequently misclassified as SQL_tool (4 instances), indicating need for improved feature discrimination between these classes.</div>
+        <div class="summary-item"><strong>Weakest Performance:</strong> CV_tool shows the lowest recall (0.500) and per-class accuracy (50%), suggesting difficulty in correctly identifying this class.</div>
+    </div>
+
+</body>
+</html>

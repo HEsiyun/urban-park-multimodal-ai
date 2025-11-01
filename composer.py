@@ -16,7 +16,7 @@ except ImportError:
 OLLAMA_BASE_URL = "http://localhost:11434/v1"
 OLLAMA_MODEL = "llama3.2:3b"  # 或 "mistral", "phi3"
 OPENAI_MODEL = "gpt-4o-mini"
-OLLAMA_MODEL_FALL_BACK = "phi3:medium-128k" # "wizard-math:7b"  "mistral" "llama3.2:3b"  或 "mistral", "phi3"
+OLLAMA_MODEL_FALL_BACK = "llama3:8b" # "wizard-math:7b"  "mistral" "llama3.2:3b"  或 "mistral", "phi3"
 
 
 def _summarize_rag_context(

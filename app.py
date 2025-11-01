@@ -15,6 +15,7 @@ from planner import ExecutionPlanner
 from executor import ToolExecutor
 from composer import compose_answer
 from rag import RAG
+from sql_fall_back import sql_fall_back
 
 # ========== Pydantic Models ==========
 class NLURequest(BaseModel):
@@ -217,7 +218,9 @@ def agent_answer_endpoint(req: AgentRequest):
         else:
             # Parse user input
             nlu_result = parse_intent_and_slots(req.text, req.image_uri)
-        
+        if nlu_result.slots["domain"] == "generic":
+            return sql_fall_back(nlu_result.raw_query)
+
         print(f"[Agent] Intent: {nlu_result.intent} (confidence: {nlu_result.confidence})")
         
         # ========== STAGE 2: Planning ==========

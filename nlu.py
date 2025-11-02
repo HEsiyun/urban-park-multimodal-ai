@@ -46,6 +46,9 @@ INTENT_PROTOTYPES = {
         "Discuss reasons for above-average mowing cost in June using mowing procedures.",
         "Interpret median mowing cost per park in Q3 2024 with reference to mowing standards.",
         "Explain July YOY change in mowing costs using recommended mowing intervals.",
+        "Calculate the differences in dimensions of a [shape] field for [sport]",
+        "What are the differences for the diamond fields for Softball Female - U17",
+        "What are the differences for the rectangular fields for U12 and U14?"
     ],
 
     # RAG+CV_tool: image + textual knowledge (needs references/explanations)
@@ -219,12 +222,127 @@ def _parse_park_name(text: str) -> Optional[str]:
             return park.title()
     return None
 
+def _parse_sport(text: str) -> Optional[Dict[str, Any]]:
+    """Detect sport, gender, age groups, and optional format/category from a query.
 
+    Returns a dict:
+      {
+        "sport": str,            # normalized sport name (e.g. "soccer", "softball", "baseball")
+        "gender": str|None,      # "male", "female", "mixed", or None
+        "age_groups": List[str], # e.g. ["U5","U6","U12"]
+        "format": str|None,      # e.g. "9v9", "11v11", "oval infield", "slow-pitch"
+        "category": str|None     # e.g. "Masters", "A", "B", "C", "D"
+      }
+    """
+    if not text:
+        return None
+
+    t = _normalize(text)
+
+    # --- sport detection (priority order) ---
+    sport = None
+    if "soccer" in t or "soccer/" in t:
+        sport = "soccer"
+    elif "gaelic" in t and "football" in t:
+        sport = "gaelic football"
+    elif "cricket" in t:
+        sport = "cricket"
+    elif "ultimate" in t or "frisbee" in t:
+        sport = "ultimate frisbee"
+    elif "lacrosse" in t:
+        sport = "lacrosse"
+    elif "rugby" in t:
+        sport = "rugby"
+    elif "softball" in t or "sofball" in t or "softbal" in t:
+        sport = "softball"
+    elif ("slo" in t and "pitch" in t) or "slow-pitch" in t or "slow pitch" in t:
+        sport = "softball"
+    elif "baseball" in t:
+        sport = "baseball"
+    elif "cfl" in t or "nfl" in t:
+        sport = "gridiron"
+    elif "football" in t:
+        # prefer soccer if keyword appears elsewhere; otherwise mark generic football
+        sport = "football"
+    else:
+        # fallback: try to find any of the known keywords
+        for k, name in [
+            ("soccer", "soccer"), ("softball", "softball"), ("baseball", "baseball"),
+            ("cricket", "cricket"), ("lacrosse", "lacrosse"), ("rugby", "rugby"),
+            ("ultimate", "ultimate frisbee"), ("frisbee", "ultimate frisbee")
+        ]:
+            if k in t:
+                sport = name
+                break
+
+    # --- gender detection ---
+    gender = None
+    if re.search(r"\b(male|men|mens|boys)\b", t):
+        gender = "male"
+    elif re.search(r"\b(female|women|womens|ladies|girls)\b", t):
+        gender = "female"
+    elif re.search(r"\b(mixed|co-?ed|coed)\b", t):
+        gender = "mixed"
+    elif "masters" in t:
+        # masters often implies adult; gender may be specified elsewhere
+        gender = gender or None
+
+    # --- age group extraction (U# patterns) ---
+    age_raw = re.findall(r"\bU\s*[-]?\s*\d{1,2}\b", t, flags=re.IGNORECASE)
+    age_groups = []
+    for a in age_raw:
+        # normalize "U 12" / "U-12" / "U12" -> "U12"
+        m = re.search(r"U\s*-?\s*(\d{1,2})", a, flags=re.IGNORECASE)
+        if m:
+            age_groups.append(f"U{int(m.group(1))}")
+
+    # also capture patterns like "U10 & U11" (handled above) and ranges like "U8-U9"
+    # de-duplicate while preserving order
+    seen = set()
+    age_groups = [x for x in age_groups if not (x in seen or seen.add(x))]
+
+    # --- format detection (e.g. 9v9, 11v11, oval infield) ---
+    fmt = None
+    vf = re.search(r"\b(\d+)\s*v\s*(\d+)\b", t)
+    if vf:
+        fmt = f"{vf.group(1)}v{vf.group(2)}"
+    elif "9v9" in t or "9 v 9" in t:
+        fmt = "9v9"
+    elif "11v11" in t or "11 v 11" in t:
+        fmt = "11v11"
+    elif "oval" in t and "infield" in t:
+        fmt = "oval infield"
+    elif ("slow-pitch" in t) or ("slow pitch" in t) or ("slo pitch" in t) or ("slo - pitch" in t):
+        fmt = "slow-pitch"
+
+    # --- category detection (Masters, A/B/C/D etc.) ---
+    category = None
+    if "masters" in t:
+        category = "Masters"
+    # capture letter grades like "A,B & C" or single letter categories
+    letters = re.findall(r"\b([A-D])\b", text.upper())
+    if letters:
+        category = ",".join(sorted(set(letters), key=letters.index))
+
+    # If no sport found, return None
+    if not sport:
+        return None
+
+    return {
+        "domain": "field_dimension",
+        "sport": sport,
+        "gender": gender,
+        "age_groups": age_groups,
+        "format": fmt,
+        "category": category
+    }
 def _detect_domain(text: str) -> str:
     """Detect query domain: mowing / field_standards / generic."""
     t = _normalize(text)
     if any(k in t for k in ["mowing", "mow", "turf", "grass", "lawn"]):
         return "mowing"
+    elif any(k in t for k in ["dimension", "fields", "field", "dimensions"]):
+        return "field_dimension"
     if any(k in t for k in ["soccer", "baseball", "softball", "cricket",
                             "football", "rugby", "field", "dimensions",
                             "pitching", "u10", "u11", "u12", "u13",
@@ -344,6 +462,14 @@ def parse_intent_and_slots(
 
     # ----- STEP 5: Slot Filling (NER-lite) -----
     domain = _detect_domain(query)
+    if domain == "field_dimension":
+        sport_info = _parse_sport(query)
+        return NLUResult(
+            intent=intent,
+            confidence=round(confidence, 3),
+            slots=sport_info or {},
+            raw_query=query
+        )
     month, year = _parse_month_year(query)
     start_month, end_month, range_year = _parse_month_range(query)
     park_name = _parse_park_name(query)

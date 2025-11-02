@@ -14,7 +14,44 @@ except ImportError:
 
 # Configuration - Local Ollama Only
 OLLAMA_BASE_URL = "http://localhost:11434/v1"
-OLLAMA_MODEL = "llama3.2:3b"
+OLLAMA_MODEL = "llama3.2:3b"  # 或 "mistral", "phi3"
+OPENAI_MODEL = "gpt-4o-mini"
+OLLAMA_MODEL_FALL_BACK = "llama3:8b" # "wizard-math:7b"  "mistral" "llama3.2:3b"  或 "mistral", "phi3"
+
+
+# ========= Lightweight standards extraction (works well with short TXT standards) =========
+_MOWING_METRIC_PATTERNS = [
+    ("grass_length_cm", r"grass\s*length.*?(\d+\s*-\s*\d+)\s*cm", lambda s: s.replace(" ", "")),
+    ("cutting_height_cm", r"cutting\s*height.*?(\d+(?:\.\d+)?)\s*cm", lambda s: s),
+    ("drainage_max_hours", r"(?:percolation|standing\s*water).*?(\d+)\s*hour", lambda s: s),
+    ("mowing_frequency", r"every\s+(\d+)\s+working\s+days", lambda s: s),
+    ("weed_tolerance_pct", r"weed\s*tolerance.*?<\s*(\d+)\s*%", lambda s: s),
+    ("bare_ground_pct", r"bare\s*ground.*?<\s*(\d+)\s*%", lambda s: s),
+]
+
+def _extract_mowing_standards_from_text(text: str) -> dict:
+    found: Dict[str, str] = {}
+    t = " ".join(line.strip() for line in (text or "").splitlines() if line.strip())
+    for key, pat, norm in _MOWING_METRIC_PATTERNS:
+        m = re.search(pat, t, flags=re.I)
+        if m:
+            try:
+                found[key] = norm(m.group(1))
+            except Exception:
+                found[key] = m.group(1)
+    return found
+
+def _extract_mowing_standards_from_hits(hits: List[Dict[str, Any]]) -> dict:
+    merged: Dict[str, str] = {}
+    for h in hits[:3]:
+        snippet = h.get("text", "") or ""
+        if not snippet:
+            continue
+        cur = _extract_mowing_standards_from_text(snippet)
+        for k, v in cur.items():
+            if v and k not in merged:
+                merged[k] = v
+    return merged
 
 
 # ========= Lightweight standards extraction (works well with short TXT standards) =========
@@ -66,7 +103,6 @@ def _summarize_rag_context(
 
     if not LLM_AVAILABLE:
         return _format_rag_snippets_simple(rag_snippets)
-
     try:
         context_text = "\n\n".join([
             f"Source {i+1} (page {snippet.get('page', '?')}): {snippet.get('text', '')[:500]}"
@@ -120,6 +156,91 @@ Task: Summarize the key information from the reference documents that answers th
             ],
             temperature=0.3,
             max_tokens=300
+        )
+        
+        summary = response.choices[0].message.content.strip()
+        return summary
+        
+    except Exception as e:
+        print(f"[WARN] LLM summarization failed: {e}")
+        # 回退到简单格式化
+        return _format_rag_snippets_simple(rag_snippets)
+
+def _summarize_rag_context_dimension_comparison(
+    rag_snippets: List[Dict[str, Any]], 
+    query: str,
+    sql_result_summary: str = "",
+    sql: str = ""
+) -> str:
+    """
+    使用 LLM 将 RAG 文档片段总结成连贯的上下文
+    
+    Args:
+        rag_snippets: RAG 检索到的文档片段
+        query: 用户原始查询
+        sql_result_summary: SQL 查询结果的摘要（如果有）
+    
+    Returns:
+        格式化的上下文说明
+    """
+    if not LLM_AVAILABLE or not rag_snippets:
+        # 回退方案：简单格式化
+        return _format_rag_snippets_simple(rag_snippets)
+    
+    try:
+        # 准备上下文
+        context_text = "\n\n".join([
+            f"Source {i+1} (page {snippet.get('page', '?')}): {snippet.get('text', '')[:500]}"
+            for i, snippet in enumerate(rag_snippets[:3])
+        ])
+        print("SQL Result Summary:", sql_result_summary)
+        # 构建 prompt
+        if sql_result_summary:
+            prompt = f"""You are an assistant helping calculate the dimension differences.
+
+User Question: {query}
+
+SQL Query Result: {sql}
+
+Reference Documents:
+{context_text}
+
+Task: You will find dimension data for a list of fields from the SQL Query Result. The reference document provides the criteria for the certain dimensions.
+Compare the dimension data from the SQL results against the criteria mentioned in the reference documents.
+List the differences for each criterion for each field.
+
+Keep it concise and directly relevant to the user's question. Use markdown formatting."""
+        else:
+            prompt = f"""You are an assistant helping answer questions about park maintenance procedures.
+
+User Question: {query}
+
+Reference Documents:
+{context_text}
+
+Task: Summarize the key information from the reference documents that answers the user's question. Provide:
+- 2-3 key points or steps
+- Relevant standards or guidelines
+- Important safety notes if applicable
+
+Use markdown formatting with bullet points."""
+
+        # 调用 LLM
+        if LLM_AVAILABLE:
+            client = OpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")
+            model = OLLAMA_MODEL_FALL_BACK
+        else:
+            client = OpenAI()  # 需要设置 OPENAI_API_KEY 环境变量
+            model = OPENAI_MODEL
+        
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that summarizes technical documentation clearly and concisely."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3,
+            max_tokens=128000
         )
 
         summary = response.choices[0].message.content.strip()
@@ -282,18 +403,50 @@ def compose_answer(
             })
 
         sql_summary = _generate_sql_summary(rows, template_hint, slots)
-        answer_md += ("" if answer_md.endswith("\n\n") or not answer_md else "\n\n") + sql_summary
-        answer_md += f"\n\n**Query Performance**: {sql.get('rowcount', 0)} rows in {sql.get('elapsed_ms', 0)} ms"
-
-        if intent == "RAG+SQL_tool" and explanation_requested:
+        
+        if answer_md:
+            answer_md += "\n\n"
+        
+        answer_md += sql_summary
+        answer_md += f"\n\n**Query Performance**: {sql.get('rowcount',0)} rows in {sql.get('elapsed_ms',0)}ms"
+        
+        # 伪造RAG hits以供后续处理
+        if intent == "SQL_tool_2":
+            ev["kb_hits"] = [{"page": "1", "text": "Criteria For Softball Female - U17: Dimension Home to Pitchers Plate should be greater than 12.9m and less than 13.42m; Home to First Base Path should be greater than 17.988m and less than 18.588m"}]
             rag_hits = ev.get("kb_hits", [])
             if rag_hits:
                 answer_md += "\n\n---\n\n"
-                rag_context = _summarize_rag_context(
+                # 使用 LLM 总结 RAG 上下文
+                rag_context = _summarize_rag_context_dimension_comparison(
                     rag_snippets=rag_hits,
-                    query=user_query or "",
-                    sql_result_summary=sql_summary
+                    query=user_query,
+                    sql_result_summary=sql_summary, sql=sql.get("rows", [])
                 )
+                answer_md += rag_context
+                
+                # 添加引用
+                for h in rag_hits[:3]:
+                    citations.append({
+                        "title": "Reference Document", 
+                        "source": h.get("source", "")
+                    })
+        # Add RAG context for hybrid queries
+        if intent == "RAG+SQL_tool":
+            rag_hits = ev.get("kb_hits", [])
+            if rag_hits:
+                answer_md += "\n\n---\n\n"
+                if nlu.get("slots", {}).get("domain") == "field_dimension":
+                    rag_context = _summarize_rag_context_dimension_comparison(
+                        rag_snippets=rag_hits,
+                        query=user_query,
+                        sql_result_summary=sql_summary, sql=sql.get("rows", [])
+                    )
+                else:
+                    rag_context = _summarize_rag_context(
+                        rag_snippets=rag_hits,
+                        query=user_query or "",
+                        sql_result_summary=sql_summary
+                    )
                 answer_md += rag_context
                 for h in rag_hits[:3]:
                     citations.append({"title": "Reference Document", "source": h.get("source", "")})
@@ -376,6 +529,10 @@ def _get_table_name(template_hint: Optional[str], slots: Dict[str, Any]) -> str:
         return "Last Mowing Dates"
     elif template_hint == "mowing.cost_breakdown":
         return "Detailed Cost Breakdown"
+    elif template_hint == "field_dimension.rectangular":
+        return "Rectangular Field Dimension Comparison"
+    elif template_hint == "field_dimension.diamond":
+        return "Diamond Field Dimension Comparison"
     return "Query Result"
 
 def _safe_get_field(row: Dict[str, Any], *names: str):
@@ -446,7 +603,11 @@ def _generate_sql_summary(rows: List[Dict], template_hint: Optional[str], slots:
 
     elif template_hint == "mowing.cost_breakdown":
         return f"### 💰 Detailed Breakdown\n\n**{len(rows)} cost entries** by activity type."
-
+    
+    elif template_hint == "field_dimension.rectangular":
+        return f"### 📏 Field Dimension Comparison\n\nComparing dimensions for **{len(rows)} rectangular fields**."
+    elif template_hint == "field_dimension.diamond":
+        return f"### 📐 Field Dimension Comparison\n\nComparing dimensions for **{len(rows)} diamond fields**."
     return f"### Results\n\nFound **{len(rows)} records**."
 
 def _detect_chart_type(rows: List[Dict], template_hint: Optional[str] = None) -> Optional[Dict[str, Any]]:

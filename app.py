@@ -1,5 +1,7 @@
 # app.py - FastAPI Backend with Refactored Architecture
 from __future__ import annotations
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 from datetime import datetime
 from typing import Any, Dict, Optional
 
@@ -13,6 +15,7 @@ from planner import ExecutionPlanner
 from executor import ToolExecutor
 from composer import compose_answer
 from rag import RAG
+from sql_fall_back import sql_fall_back
 
 # ========== Pydantic Models ==========
 class NLURequest(BaseModel):
@@ -209,6 +212,8 @@ def agent_answer_endpoint(req: AgentRequest):
             )
         else:
             nlu_result = parse_intent_and_slots(req.text, req.image_uri)
+        if nlu_result.slots["domain"] == "generic":
+            return sql_fall_back(nlu_result.raw_query)
 
         print(f"[Agent] Intent: {nlu_result.intent} (confidence: {nlu_result.confidence})")
 

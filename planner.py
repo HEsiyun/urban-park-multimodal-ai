@@ -70,6 +70,16 @@ class ExecutionPlanner:
                 "builder": self._build_breakdown_params,
                 "required": ["month", "year"],
                 "optional": ["park_name"]
+            },
+            "field_dimension.rectangular": {
+                "builder": self._build_top_cost_params,  # Placeholder
+                "required": ["sport", "age_group"],
+                "optional": []
+            },
+            "field_dimension.diamond": {
+                "builder": self._build_top_cost_params,  # Placeholder
+                "required": ["sport", "age_group"],
+                "optional": []
             }
         }
 
@@ -175,6 +185,11 @@ class ExecutionPlanner:
 
     # ========== RAG+SQL WORKFLOW ==========
     def _plan_rag_sql(self, nlu_result: NLUResult) -> ExecutionPlan:
+        if nlu_result.slots.get("domain") == "field_dimension":
+            return self._plan_rag_sql_fields(nlu_result)
+        else:
+            return self._plan_rag_sql_mowing(nlu_result)
+    def _plan_rag_sql_mowing(self, nlu_result: NLUResult) -> ExecutionPlan:
         """Plan hybrid RAG+SQL workflow"""
         slots = nlu_result.slots
         query = nlu_result.raw_query
@@ -219,7 +234,55 @@ class ExecutionPlanner:
                 "explanation_requested": bool(slots.get("explanation_requested"))
             }
         )
-
+    
+    def _plan_rag_sql_fields(self, nlu_result: NLUResult) -> ExecutionPlan:
+        """Plan hybrid RAG+SQL workflow for field dimension queries"""
+        slots = nlu_result.slots
+        query = nlu_result.raw_query
+        
+        # RAG component: retrieve context
+        rag_keywords = self._build_rag_keywords(slots)
+        
+        # SQL component: determine template and params
+        template = self._route_sql_template(query, slots)
+        template_config = self.sql_templates.get(template)
+        
+        if not template_config:
+            return ExecutionPlan(
+                tool_chain=[],
+                clarifications=[f"Unknown SQL template: {template}"]
+            )
+        
+        
+        # param_builder = template_config["builder"]
+        # params = param_builder(slots)
+        
+        # Validate parameters
+        # clarifications = self._validate_params(template, params, template_config)
+        
+        tool_chain = [
+            {
+                "tool": "kb_retrieve",
+                "args": {
+                    "query": rag_keywords,
+                    "top_k": 3
+                }
+            },
+            {
+                "tool": "sql_query_rag",
+                "args": {
+                    "template": template,   
+                }
+            }
+        ]
+        
+        print(f"[Planner] RAG+SQL plan: template={template}")
+        
+        return ExecutionPlan(
+            tool_chain=tool_chain,
+            clarifications="",
+            metadata={"workflow": "RAG+SQL", "template": template}
+        )
     # ========== CV WORKFLOW ==========
     def _plan_cv(self, nlu_result: NLUResult) -> ExecutionPlan:
         """Plan pure CV workflow"""
@@ -279,8 +342,11 @@ class ExecutionPlanner:
         """
         lowq = (query or "").lower().strip()
         domain = slots.get("domain")
-
-        # Only support mowing domain for now; others -> unsupported
+        
+        if domain == "field_dimension":
+            if slots.get("sport") in ["soccer", "cricket", "gaelic football", "cfl", "nfl", "rugby", "ultimate frisbee", "lacrosse", "frisbee", "ultimate"]:
+                return "field_dimension.rectangular"
+            return "field_dimension.diamond"  # placeholder for field dimension template
         if domain != "mowing":
             return None
 
@@ -362,3 +428,11 @@ class ExecutionPlanner:
         # mowing.last_mowing_date has no required fields; nothing to add
 
         return clarifications
+    
+    def _build_rag_keywords(self, slots: Dict[str, Any]) -> str:
+        """Build RAG retrieval keywords based on domain and query"""
+        res = ""
+        for key, value in slots.items():
+            if key != "domain" and value is not None:
+                res += f"{key}:{value} " 
+        return res.strip()

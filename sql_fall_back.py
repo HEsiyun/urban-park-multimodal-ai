@@ -7,7 +7,7 @@ from sqlalchemy import create_engine
 from langchain_huggingface import HuggingFacePipeline
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 from typing import Dict, Any
-
+#lol
 def sql_fall_back(query: str) -> Dict[str, Any]:
     """Function to execute SQL query with fall back to a different LLM if needed."""
     # File paths
@@ -58,4 +58,4 @@ def sql_fall_back(query: str) -> Dict[str, Any]:
     # Use the agent
     resp = agent_executor.invoke(query)
     #response = agent_executor.invoke("How many events occurred in May from the event data?")
-    return {"answer_md": str(resp)}
+    return {"answer_md": str(resp["output"])}

@@ -341,8 +341,8 @@ def _detect_domain(text: str) -> str:
     t = _normalize(text)
     if any(k in t for k in ["mowing", "mow", "turf", "grass", "lawn"]):
         return "mowing"
-    elif any(k in t for k in ["dimension", "fields", "field", "dimensions"]):
-        return "field_dimension"
+    # elif any(k in t for k in ["dimension", "fields", "field", "dimensions"]):
+    #    return "field_dimension"
     if any(k in t for k in ["soccer", "baseball", "softball", "cricket",
                             "football", "rugby", "field", "dimensions",
                             "pitching", "u10", "u11", "u12", "u13",

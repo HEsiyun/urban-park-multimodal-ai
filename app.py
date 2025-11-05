@@ -212,7 +212,8 @@ def agent_answer_endpoint(req: AgentRequest):
             )
         else:
             nlu_result = parse_intent_and_slots(req.text, req.image_uri)
-        if nlu_result.slots["domain"] == "generic":
+
+        if (nlu_result.slots.get("domain", {}) == "generic"):
             return sql_fall_back(nlu_result.raw_query)
 
         print(f"[Agent] Intent: {nlu_result.intent} (confidence: {nlu_result.confidence})")
@@ -300,6 +301,16 @@ def agent_answer_endpoint(req: AgentRequest):
             }
         )
 
+@app.post("/sql/fall_back")
+def sql_fall_back_endpoint(req: AgentRequest):
+    """
+    SQL Fall Back Endpoint
+    """
+    try:
+        response = sql_fall_back(req.text)
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"SQL Fall Back failed: {str(e)}")
 
 # ========== Debug Endpoint ==========
 @app.post("/debug/pipeline")

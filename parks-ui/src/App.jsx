@@ -16,6 +16,7 @@ export default function App() {
   const [baseUrl, setBaseUrl] = useState("http://127.0.0.1:8000");
   const [activeTab, setActiveTab] = useState("agent");
   const [text, setText] = useState("");
+  const [text2, setText2] = useState("");
   const [imageUri, setImageUri] = useState("");
   const [loading, setLoading] = useState(false);
   const [resp, setResp] = useState(null);
@@ -50,6 +51,37 @@ export default function App() {
     },
   ];
 
+    async function callEndpointWithText2(path) {
+    setLoading(true);
+    setError("");
+    setResp(null);
+    try {
+      const body = { text: text2.trim() }; // Use text2 instead of text
+      if (imageUri) body.image_uri = imageUri;
+  
+      const r = await fetch(`${baseUrl}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+  
+      if (!r.ok) {
+        const errorData = await r.json().catch(() => ({}));
+        const detail =
+          typeof errorData.detail === "string"
+            ? errorData.detail
+            : errorData.detail?.error || errorData.detail?.message || "";
+        throw new Error(detail || `${r.status} ${r.statusText}`);
+      }
+  
+      const data = await r.json();
+      setResp(data);
+    } catch (e) {
+      setError(e.message || String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
   async function callEndpoint(path) {
     setLoading(true);
     setError("");
@@ -675,7 +707,21 @@ export default function App() {
                   {loading ? "⏳ Processing..." : "🚀 Send"}
                 </button>
               </div>
-
+              <div className="spacer" />
+              <textarea
+                className="textarea"
+                value={text2}
+                onChange={(e) => setText2(e.target.value)}
+                placeholder="Type your question any"
+                />
+              <div className="tabs">
+                  <button
+                    className={`tab ${activeTab === "agent" ? "active" : ""}`}
+                    onClick={() => {setActiveTab("agent"); callEndpointWithText2("/sql/fall_back")}}
+                  >
+                    Pure Agent SQL Answer
+                  </button>
+                </div>
               {error && <div className="error">❌ {error}</div>}
             </div>
           </div>

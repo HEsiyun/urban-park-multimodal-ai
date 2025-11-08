@@ -302,7 +302,7 @@ def _tpl_get_rectangular_dimensions(con: sqlite3.Connection, params: Dict[str, A
     elapsed = int((time.time() - t0) * 1000)
     return {"rows": rows, "rowcount": len(rows), "elapsed_ms": elapsed}
 
-def _tpl_mowing_cost_by_park_month(con: sqlite3.Connection, params: Dict[str, Any]) -> Dict[str, Any]:
+def _tpl_mowing_cost_least_per_sqft(con: sqlite3.Connection, params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Returns the park with the lowest mowing cost per square foot for a given period.
     """
@@ -394,7 +394,7 @@ TEMPLATE_REGISTRY: Dict[str, Callable[[sqlite3.Connection, Dict[str, Any]], Dict
     "field_dimension.rectangular": _tpl_get_rectangular_dimensions,
     "field_dimension.diamond": _tpl_get_diamond_dimensions,
     # 过去per sqft最低除草成本
-    "mowing.cost_by_park_least_per_sqft": _tpl_mowing_cost_by_park_month,
+    "mowing.cost_by_park_least_per_sqft": _tpl_mowing_cost_least_per_sqft,
 }
 
 # -----------------------------

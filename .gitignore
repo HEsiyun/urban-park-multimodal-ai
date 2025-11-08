@@ -24,3 +24,6 @@ __pycache__/
 *.tmp
 /data/faiss_index
 data/mowing.duckdb
+
+# virtual environments
+.venv/

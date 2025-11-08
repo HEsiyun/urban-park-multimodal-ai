@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import sqlite3
 from typing import Optional
+from utils import create_park_name_mapping
 
 DIAMOND_FIELD_COLUMNS = ["Name of Field", 
                         "Name of Park Site", 
@@ -46,6 +47,8 @@ class DataLayer:
         activity_type_df = pd.read_excel(os.path.join(self.data_dir, "6 Maint Activity Types- Mar 2025.xlsx"), sheet_name=0, skiprows=3, usecols='B,C,D')
         park_GIS_df = pd.read_excel(os.path.join(self.data_dir, "parks.xlsx"), sheet_name=0)
         order_df = pd.read_excel(os.path.join(self.data_dir, "6 Stanley order list.xlsx"), sheet_name=0)
+        # Create park name mapping
+        mapping_df = create_park_name_mapping(labor_df, park_GIS_df)
         
         # Normalize column names
         labor_df.columns = [str(c).strip() for c in labor_df.columns]
@@ -94,6 +97,7 @@ class DataLayer:
         rectangular_field_size_df.to_sql("rectangular_field_size_data", self.connection, if_exists="replace", index=False)
         park_GIS_df.to_sql("park_GIS_data", self.connection, if_exists="replace", index=False)
         order_df.to_sql("order_data", self.connection, if_exists="replace", index=False)
+        mapping_df.to_sql("park_name_mapping", self.connection, if_exists="replace", index=False)
 
         return self
         

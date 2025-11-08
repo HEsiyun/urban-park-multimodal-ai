@@ -71,6 +71,11 @@ class ExecutionPlanner:
                 "required": ["month", "year"],
                 "optional": ["park_name"]
             },
+            "mowing.cost_by_park_least_per_sqft": {
+                "builder": self._build_cost_least_per_sqft_params,
+                "required": ["month1", "month2", "year1", "year2"],
+                "optional": []
+            },
             "field_dimension.rectangular": {
                 "builder": self._build_top_cost_params,  # Placeholder
                 "required": ["sport", "age_group"],
@@ -378,6 +383,10 @@ class ExecutionPlanner:
         if "by park" in lowq or "each park" in lowq:
             return "mowing.cost_by_park_month"
 
+        # Pattern 8: Parks having the least mowing cost for a period
+        if "least" in lowq and "mowing cost" in lowq:
+            return "mowing.cost_by_park_least_per_sqft"
+
         # No supported template matched
         return None
 
@@ -406,6 +415,14 @@ class ExecutionPlanner:
     def _build_breakdown_params(self, slots: Dict[str, Any]) -> Dict[str, Any]:
         """Build parameters for cost breakdown query"""
         return {"month": slots.get("month"), "year": slots.get("year"), "park_name": slots.get("park_name")}
+    def _build_cost_least_per_sqft_params(self, slots: Dict[str, Any]) -> Dict[str, Any]:
+        """Build parameters for least cost per sqft query"""
+        return {
+            "month1": slots.get("month1"), 
+            "month2": slots.get("month2"), 
+            "year1": slots.get("year1"),
+            "year2": slots.get("year2")
+        }
 
     # ========== PARAMETER VALIDATION ==========
     def _validate_params(self, template: str, params: Dict[str, Any], config: Dict[str, Any]) -> List[str]:
@@ -426,7 +443,8 @@ class ExecutionPlanner:
         elif template in ["mowing.cost_by_park_month", "mowing.cost_breakdown", "mowing.labor_cost_month_top1"]:
             clarifications.append("Which month and year would you like to query?")
         # mowing.last_mowing_date has no required fields; nothing to add
-
+        elif template == "mowing.cost_by_park_least_per_sqft":
+            clarifications.append("Please specify the start month, end month, start year, and end year for the period.")
         return clarifications
     
     def _build_rag_keywords(self, slots: Dict[str, Any]) -> str:

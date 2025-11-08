@@ -302,6 +302,76 @@ def _tpl_get_rectangular_dimensions(con: sqlite3.Connection, params: Dict[str, A
     elapsed = int((time.time() - t0) * 1000)
     return {"rows": rows, "rowcount": len(rows), "elapsed_ms": elapsed}
 
+def _tpl_mowing_cost_by_park_month(con: sqlite3.Connection, params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Returns the park with the lowest mowing cost per square foot for a given period.
+    """
+    # Extract parameters
+    start_month = params.get("month1")
+    end_month = params.get("month2")
+    start_year = params.get("year1")
+    end_year = params.get("year2")
+    
+    # Defaults
+    if not start_year or not end_year:
+        current_year = datetime.utcnow().year
+        start_year = start_year or current_year
+        end_year = end_year or current_year
+    
+    if not start_month or not end_month:
+        start_month = 1
+        end_month = 12
+    
+    # Create start and end date strings for comparison
+    start_date = f"{start_year}-{start_month:02d}-01"
+    # End date: last day of end_month
+    if end_month == 12:
+        end_date = f"{end_year}-12-31"
+    else:
+        end_date = f"{end_year}-{end_month:02d}-31"  # Approximation
+    
+    sql = f"""
+    WITH park_costs AS (
+        SELECT 
+            p.PARKNAME,
+            p.Shape_Area,
+            SUM(CAST(l."Val.in rep.cur." AS REAL)) AS total_cost,
+            COUNT(*) AS mowing_sessions
+        FROM labor_data l
+        JOIN park_name_mapping m ON l."CO Object Name" = m.CO_Object_Name
+        JOIN park_GIS_data p ON m.matched_PARKNAME = p.PARKNAME
+        WHERE l."Posting Date" >= '{start_date}'
+            AND l."Posting Date" <= '{end_date}'
+            AND p.Shape_Area > 0
+            AND m.matched_PARKNAME IS NOT NULL
+            AND m.matched_PARKNAME != 'None'
+        GROUP BY p.PARKNAME, p.Shape_Area
+    )
+    SELECT 
+        PARKNAME as park_name,
+        ROUND(total_cost, 2) as total_cost,
+        ROUND(Shape_Area, 2) as area_sqft,
+        ROUND(total_cost / Shape_Area, 4) AS cost_per_sqft
+    FROM park_costs
+    WHERE Shape_Area > 0
+    ORDER BY cost_per_sqft ASC
+    LIMIT 10;
+    """
+    
+    t0 = time.time()
+    cur = con.execute(sql)
+    cols = [d[0] for d in cur.description] if cur.description else []
+    rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+    elapsed = int((time.time() - t0) * 1000)
+    
+    return {
+        "rows": rows, 
+        "rowcount": len(rows), 
+        "elapsed_ms": elapsed, 
+        "chart_type": "bar",
+        "period": f"{start_month}/{start_year} to {end_month}/{end_year}"
+    }
+
 # -----------------------------
 # Dispatcher registry
 # -----------------------------
@@ -323,6 +393,8 @@ TEMPLATE_REGISTRY: Dict[str, Callable[[sqlite3.Connection, Dict[str, Any]], Dict
     # NEW: 运动场地尺寸查询
     "field_dimension.rectangular": _tpl_get_rectangular_dimensions,
     "field_dimension.diamond": _tpl_get_diamond_dimensions,
+    # 过去per sqft最低除草成本
+    "mowing.cost_by_park_least_per_sqft": _tpl_mowing_cost_by_park_month,
 }
 
 # -----------------------------

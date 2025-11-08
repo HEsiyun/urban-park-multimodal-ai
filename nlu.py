@@ -336,6 +336,46 @@ def _parse_sport(text: str) -> Optional[Dict[str, Any]]:
         "format": fmt,
         "category": category
     }
+
+def _parse_cross_year_month_range(text: str) -> Tuple[Optional[int], Optional[int], Optional[int], Optional[int]]:
+    """
+    Extract month range that may span multiple years from text.
+    Specifically handles patterns like "from June 2024 to May 2025".
+    
+    Returns: (start_month, end_month, start_year, end_year)
+    
+    Examples:
+        "from June 2024 to May 2025" -> (6, 5, 2024, 2025)
+        "between Apr 2023 and Jun 2024" -> (4, 6, 2023, 2024)
+    """
+    t = _normalize(text)
+    
+    # Pattern: "from/between [Month] [Year] to/and [Month] [Year]"
+    pattern = r"(?:from|between)\s+([a-zA-Z]+)\s+(20\d{2})\s+(?:to|and)\s+([a-zA-Z]+)\s+(20\d{2})"
+    m = re.search(pattern, t)
+    
+    if not m:
+        return None, None, None, None
+    
+    month1_str = m.group(1).lower()
+    year1 = int(m.group(2))
+    month2_str = m.group(3).lower()
+    year2 = int(m.group(4))
+    
+    def to_month(s: str) -> Optional[int]:
+        """Convert month name/abbreviation to month number (1-12)."""
+        if s in _MONTHS:
+            return _MONTHS[s]
+        return _MONTH_ABBR.get(s[:3])
+    
+    month1 = to_month(month1_str)
+    month2 = to_month(month2_str)
+    
+    if month1 is None or month2 is None:
+        return None, None, None, None
+    
+    return month1, month2, year1, year2
+
 def _detect_domain(text: str) -> str:
     """Detect query domain: mowing / field_standards / generic."""
     t = _normalize(text)
@@ -473,6 +513,7 @@ def parse_intent_and_slots(
     month, year = _parse_month_year(query)
     start_month, end_month, range_year = _parse_month_range(query)
     park_name = _parse_park_name(query)
+    month1, month2, year1, year2 = _parse_cross_year_month_range(query) # least cost for a period
 
     slots = {
         "domain": domain,
@@ -481,6 +522,10 @@ def parse_intent_and_slots(
         "start_month": start_month,
         "end_month": end_month,
         "range_year": range_year,
+        "month1": month1, # least cost for a period
+        "month2": month2, # least cost for a period
+        "year1": year1, # least cost for a period
+        "year2": year2, # least cost for a period
         "park_name": park_name,
         "image_uri": image_uri,
         "explanation_requested": explanation_requested,  # used by planner

@@ -372,6 +372,107 @@ def _tpl_mowing_cost_least_per_sqft(con: sqlite3.Connection, params: Dict[str, A
         "period": f"{start_month}/{start_year} to {end_month}/{end_year}"
     }
 
+
+def _tpl_activity_cost_by_location(con: sqlite3.Connection, params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Returns aggregated activity cost for a park/location within a specific month range.
+    Expects params:
+        {
+            "park_name": str,
+            "month1": int,
+            "month2": int,
+            "year1": int,
+            "year2": int,
+            "activity_name": str (optional - keyword filter)
+        }
+    """
+    park_name = params.get("park_name")
+    start_month = params.get("month1")
+    end_month = params.get("month2")
+    start_year = params.get("year1")
+    end_year = params.get("year2")
+    activity_name = params.get("activity_name")
+
+    # Defaults (mirror existing templates)
+    if not start_year or not end_year:
+        current_year = datetime.utcnow().year
+        start_year = start_year or current_year
+        end_year = end_year or current_year
+
+    if not start_month or not end_month:
+        start_month = 1
+        end_month = 12
+
+    try:
+        start_month = int(start_month)
+        end_month = int(end_month)
+        start_year = int(start_year)
+        end_year = int(end_year)
+    except (TypeError, ValueError):
+        return {
+            "rows": [{"error": "Invalid month/year parameters provided"}],
+            "rowcount": 1,
+            "elapsed_ms": 0
+        }
+
+    if not park_name:
+        return {
+            "rows": [{"error": "park_name is required"}],
+            "rowcount": 1,
+            "elapsed_ms": 0
+        }
+
+    start_date = f"{start_year}-{start_month:02d}-01"
+    if end_month == 12:
+        end_date = f"{end_year}-12-31"
+    else:
+        end_date = f"{end_year}-{end_month:02d}-31"
+
+    park_like = f"%{park_name.upper()}%"
+    sql = """
+    SELECT 
+        UPPER(oda."Location") AS location,
+        COALESCE(ada."DESCRIPTION", oda."Description", 'Unknown') AS activity_description,
+        ROUND(SUM(CAST(oda."Cost" AS REAL)), 2) AS activity_cost,
+        MIN(DATE(oda."Actual start")) AS first_date,
+        MAX(DATE(oda."Actual start")) AS last_date,
+        COUNT(*) AS work_orders
+    FROM order_data oda
+    LEFT JOIN activity_type_data ada
+        ON CAST(oda."MaintActivType" AS TEXT) = CAST(ada."CODE" AS TEXT)
+    WHERE 
+        oda."Actual start" IS NOT NULL
+        AND DATE(oda."Actual start") BETWEEN ? AND ?
+        AND UPPER(oda."Location") LIKE ?
+    """
+    params_list: List[Any] = [start_date, end_date, park_like]
+
+    if activity_name:
+        sql += """
+        AND LOWER(COALESCE(ada."DESCRIPTION", oda."Description", '')) LIKE ?
+        """
+        params_list.append(f"%{activity_name.lower()}%")
+
+    sql += """
+    GROUP BY 
+        UPPER(oda."Location"),
+        COALESCE(ada."DESCRIPTION", oda."Description", 'Unknown')
+    ORDER BY activity_cost DESC;
+    """
+
+    t0 = time.time()
+    cur = con.execute(sql, params_list)
+    cols = [d[0] for d in cur.description] if cur.description else []
+    rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+    elapsed = int((time.time() - t0) * 1000)
+    return {
+        "rows": rows,
+        "rowcount": len(rows),
+        "elapsed_ms": elapsed,
+        "chart_type": "bar",
+        "period": f"{start_month:02d}/{start_year} to {end_month:02d}/{end_year}"
+    }
+
 # -----------------------------
 # Dispatcher registry
 # -----------------------------
@@ -395,6 +496,8 @@ TEMPLATE_REGISTRY: Dict[str, Callable[[sqlite3.Connection, Dict[str, Any]], Dict
     "field_dimension.diamond": _tpl_get_diamond_dimensions,
     # 过去per sqft最低除草成本
     "mowing.cost_by_park_least_per_sqft": _tpl_mowing_cost_least_per_sqft,
+    # NEW: Activity cost by park within a range
+    "activity.cost_by_location_range": _tpl_activity_cost_by_location,
 }
 
 # -----------------------------

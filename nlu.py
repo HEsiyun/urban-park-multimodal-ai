@@ -122,6 +122,20 @@ _DATA_CUES = [
     "per park", "by park", "per month", "by month", "yoy", "year over year", "histogram",
     "table", "csv", "series"
 ]
+
+_ACTIVITY_KEYWORDS = [
+    "activity", "activities", "maintenance", "maint.", "maint", "pest control",
+    "refuse removal", "tide line cleanup", "paper picking", "regular maintenance",
+    "snow removal", "tree maintenance", "natural turf care", "beds maintenance",
+    "invasive species", "leaf removal", "goose waste", "irrigation", "water/irrigation",
+    "horticulture", "water bodies maintenance", "course grooming", "ball diamonds",
+    "a fields", "\"a\" fields", "b fields", "\"b\" fields", "pass. turf", "turf mow",
+    "beach cleanup", "administration", "artif. turf", "forest fire suppression",
+    "grounds maint", "path/court/parking", "unpaved surface", "playground resilient",
+    "log removal", "sand screening", "work order", "work orders", "order data"
+]
+
+_GENERIC_ACTIVITY_TOKENS = {"activity", "activities", "the activity", "the activities"}
 # ========== ENTITY EXTRACTION UTILITIES ==========
 _MONTHS = {
     m: i for i, m in enumerate(
@@ -213,13 +227,44 @@ def _parse_park_name(text: str) -> Optional[str]:
         return park_clean.title()
     # Known examples (extend as needed)
     known_parks = [
-        "alice town", "cambridge", "garden", "grandview",
-        "mcgill", "mcspadden", "mosaic creek", "cariboo",
-        "john hendry", "hastings", "new brighton"
+        "alice townley", "cambridge", "garden", "grandview",
+        "mcgill", "mcspadden", "mosaic creek", "oxford", "pandora",
+        "salsbury", "templeton", "victoria", "woodland", "adanac",
+        "bates", "burrard view", "callister", "charles", "clinton",
+        "dusty greenwell", "hastings park - sanctuary", "kaslo",
+        "new brighton", "rupert", "sunrise", "thunderbird", "brewers",
+        "clark", "general brock", "glen", "john hendry", "sunnyside",
+        "cedar cottage", "china creek south", "sahalli", "guelph",
+        "robson", "tea swamp", "aberdeen", "beaconsfield", "cariboo",
+        "carleton", "collingwood", "falaise", "foster", "gaston",
+        "melbourne", "price", "renfrew ravine", "slocan", "sun hop",
+        "prince edward", "maclean", "oppenheimer", "strathcona",
+        "thornton", "carolina", "jonathan rogers", "major matthews",
+        "mount pleasant", "trillium", "stanley"
     ]
     for park in known_parks:
         if park in t:
             return park.title()
+    return None
+
+def _parse_activity_name(text: str) -> Optional[str]:
+    """Extract activity/maintenance keyword from text."""
+    if not text:
+        return None
+
+    t = _normalize(text)
+    pattern = r"(?:cost|costs)\s+of\s+(?:the\s+)?([a-z0-9\"'\s\./-]+?)(?:\s+in|\s+at|\s+for|\s+from|$)"
+    m = re.search(pattern, t)
+    if m:
+        candidate = m.group(1).strip(" \"'")
+        if candidate and candidate not in _GENERIC_ACTIVITY_TOKENS:
+            return candidate
+
+    for keyword in sorted(_ACTIVITY_KEYWORDS, key=len, reverse=True):
+        if keyword in _GENERIC_ACTIVITY_TOKENS:
+            continue
+        if keyword in t:
+            return keyword
     return None
 
 def _parse_sport(text: str) -> Optional[Dict[str, Any]]:
@@ -381,6 +426,8 @@ def _detect_domain(text: str) -> str:
     t = _normalize(text)
     if any(k in t for k in ["mowing", "mow", "turf", "grass", "lawn"]):
         return "mowing"
+    if any(k in t for k in _ACTIVITY_KEYWORDS):
+        return "activity"
     elif any(k in t for k in ["dimension", "fields", "field", "dimensions"]):
         return "field_dimension"
     if any(k in t for k in ["soccer", "baseball", "softball", "cricket",
@@ -514,6 +561,7 @@ def parse_intent_and_slots(
     start_month, end_month, range_year = _parse_month_range(query)
     park_name = _parse_park_name(query)
     month1, month2, year1, year2 = _parse_cross_year_month_range(query) # least cost for a period
+    activity_name = _parse_activity_name(query)
 
     slots = {
         "domain": domain,
@@ -529,6 +577,7 @@ def parse_intent_and_slots(
         "park_name": park_name,
         "image_uri": image_uri,
         "explanation_requested": explanation_requested,  # used by planner
+        "activity_name": activity_name,
     }
 
     # ----- LOGGING -----

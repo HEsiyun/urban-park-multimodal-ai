@@ -85,6 +85,11 @@ class ExecutionPlanner:
                 "builder": self._build_top_cost_params,  # Placeholder
                 "required": ["sport", "age_group"],
                 "optional": []
+            },
+            "activity.cost_by_location_range": {
+                "builder": self._build_activity_cost_params,
+                "required": ["park_name", "month1", "month2", "year1", "year2"],
+                "optional": ["activity_name"]
             }
         }
 
@@ -348,44 +353,50 @@ class ExecutionPlanner:
         lowq = (query or "").lower().strip()
         domain = slots.get("domain")
         
+        # Handle field dimension domain
         if domain == "field_dimension":
             if slots.get("sport") in ["soccer", "cricket", "gaelic football", "cfl", "nfl", "rugby", "ultimate frisbee", "lacrosse", "frisbee", "ultimate"]:
                 return "field_dimension.rectangular"
-            return "field_dimension.diamond"  # placeholder for field dimension template
-        if domain != "mowing":
-            return None
+            return "field_dimension.diamond"
+        
+        # Handle mowing domain
+        if domain == "mowing":
+            # Pattern 1: Superlative queries (highest, top, most expensive)
+            if any(k in lowq for k in ["highest", "top", "max", "most expensive"]) and "cost" in lowq:
+                return "mowing.labor_cost_month_top1"
 
-        # Pattern 1: Superlative queries (highest, top, most expensive)
-        if any(k in lowq for k in ["highest", "top", "max", "most expensive"]) and "cost" in lowq:
-            return "mowing.labor_cost_month_top1"
+            # Pattern 2: Recent/last queries
+            if any(k in lowq for k in ["last", "recent", "latest", "when was"]) and any(k in lowq for k in ["mow", "mowing"]):
+                return "mowing.last_mowing_date"
 
-        # Pattern 2: Recent/last queries
-        if any(k in lowq for k in ["last", "recent", "latest", "when was"]) and any(k in lowq for k in ["mow", "mowing"]):
-            return "mowing.last_mowing_date"
+            # Pattern 3: Trend queries
+            if "trend" in lowq and "cost" in lowq:
+                return "mowing.cost_trend"
 
-        # Pattern 3: Trend queries
-        if "trend" in lowq and "cost" in lowq:
-            return "mowing.cost_trend"
+            # Pattern 4: Range queries (from X to Y)
+            if re.search(r'\bfrom\s+\w+\s+to\s+\w+', lowq) and "cost" in lowq:
+                return "mowing.cost_trend"
 
-        # Pattern 4: Range queries (from X to Y)
-        if re.search(r'\bfrom\s+\w+\s+to\s+\w+', lowq) and "cost" in lowq:
-            return "mowing.cost_trend"
+            # Pattern 5: Comparison queries
+            if any(k in lowq for k in ["compare", "across", "all parks"]) and "cost" in lowq:
+                return "mowing.cost_by_park_month"
 
-        # Pattern 5: Comparison queries
-        if any(k in lowq for k in ["compare", "across", "all parks"]) and "cost" in lowq:
-            return "mowing.cost_by_park_month"
+            # Pattern 6: Breakdown queries
+            if any(k in lowq for k in ["breakdown", "detail", "break down"]) and "cost" in lowq:
+                return "mowing.cost_breakdown"
 
-        # Pattern 6: Breakdown queries
-        if any(k in lowq for k in ["breakdown", "detail", "break down"]) and "cost" in lowq:
-            return "mowing.cost_breakdown"
+            # Pattern 7: By-park phrasing
+            if "by park" in lowq or "each park" in lowq:
+                return "mowing.cost_by_park_month"
 
-        # Pattern 7: By-park phrasing
-        if "by park" in lowq or "each park" in lowq:
-            return "mowing.cost_by_park_month"
-
-        # Pattern 8: Parks having the least mowing cost for a period
-        if "least" in lowq and "mowing cost" in lowq:
-            return "mowing.cost_by_park_least_per_sqft"
+            # Pattern 8: Parks having the least mowing cost for a period
+            if "least" in lowq and "mowing cost" in lowq:
+                return "mowing.cost_by_park_least_per_sqft"
+        # Handle activity domain
+        if domain == "activity":
+            # Pattern 9: Activity/maintenance cost within a park and date range
+            if "cost" in lowq and "in" in lowq and (("from" in lowq and " to " in lowq) or "between" in lowq):
+                return "activity.cost_by_location_range"
 
         # No supported template matched
         return None
@@ -423,6 +434,16 @@ class ExecutionPlanner:
             "year1": slots.get("year1"),
             "year2": slots.get("year2")
         }
+    def _build_activity_cost_params(self, slots: Dict[str, Any]) -> Dict[str, Any]:
+        """Build parameters for park activity cost range query"""
+        return {
+            "park_name": slots.get("park_name"),
+            "month1": slots.get("month1"),
+            "month2": slots.get("month2"),
+            "year1": slots.get("year1"),
+            "year2": slots.get("year2"),
+            "activity_name": slots.get("activity_name")
+        }
 
     # ========== PARAMETER VALIDATION ==========
     def _validate_params(self, template: str, params: Dict[str, Any], config: Dict[str, Any]) -> List[str]:
@@ -445,6 +466,8 @@ class ExecutionPlanner:
         # mowing.last_mowing_date has no required fields; nothing to add
         elif template == "mowing.cost_by_park_least_per_sqft":
             clarifications.append("Please specify the start month, end month, start year, and end year for the period.")
+        elif template == "activity.cost_by_location_range":
+            clarifications.append("Please provide the park name along with start and end month/year (e.g., from March 2024 to May 2024).")
         return clarifications
     
     def _build_rag_keywords(self, slots: Dict[str, Any]) -> str:

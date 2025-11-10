@@ -39,6 +39,7 @@ body {
   min-height: 100vh;
   padding: 24px;
   background: var(--bg);
+  overflow-x: hidden;
 }
 
 .shell {
@@ -103,6 +104,17 @@ body {
   padding: 24px;
   box-shadow: var(--shadow);
   transition: all 0.3s ease;
+}
+
+.response-card {
+  overflow-x: auto;
+}
+
+.response-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
 }
 
 .card:hover {
@@ -322,6 +334,10 @@ body {
 .prose {
   line-height: 1.8;
   color: var(--text-secondary);
+  max-width: 900px;
+  width: 100%;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .prose strong {

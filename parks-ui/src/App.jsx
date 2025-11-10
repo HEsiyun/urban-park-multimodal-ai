@@ -767,13 +767,13 @@ export default function App() {
           </aside>
         </div>
 
-        <section className="card">
+        <section className="card response-card">
           <div className="label">Response</div>
           {!resp && (
             <div className="muted">No response yet. Try a query above!</div>
           )}
           {resp && (
-            <div className="stack">
+            <div className="stack response-content">
               {activeTab === "agent" && (
                 <StatusBanner status={resp.status} message={resp.message} />
               )}

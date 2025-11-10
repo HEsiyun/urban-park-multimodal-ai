@@ -473,6 +473,149 @@ def _tpl_activity_cost_by_location(con: sqlite3.Connection, params: Dict[str, An
         "period": f"{start_month:02d}/{start_year} to {end_month:02d}/{end_year}"
     }
 
+
+def _tpl_activity_latest_by_location(con: sqlite3.Connection, params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Returns the most recent actual start date for each activity in a location.
+    Expects params:
+        {
+            "park_name": str (required),
+            "activity_name": str (optional keyword filter)
+        }
+    """
+    park_name = params.get("park_name")
+    activity_name = params.get("activity_name")
+
+    if not park_name:
+        return {
+            "rows": [{"error": "park_name is required"}],
+            "rowcount": 1,
+            "elapsed_ms": 0
+        }
+
+    park_like = f"%{park_name.upper()}%"
+    sql = """
+    SELECT
+        UPPER(oda."Location") AS location,
+        COALESCE(ada."DESCRIPTION", oda."Description", 'Unknown') AS activity_description,
+        MAX(DATE(oda."Actual start")) AS last_actual_start,
+        COUNT(*) AS total_orders
+    FROM order_data oda
+    LEFT JOIN activity_type_data ada
+        ON CAST(oda."MaintActivType" AS TEXT) = CAST(ada."CODE" AS TEXT)
+    WHERE
+        oda."Actual start" IS NOT NULL
+        AND UPPER(oda."Location") LIKE ?
+    """
+    params_list: List[Any] = [park_like]
+
+    if activity_name:
+        sql += """
+        AND LOWER(COALESCE(ada."DESCRIPTION", oda."Description", '')) LIKE ?
+        """
+        params_list.append(f"%{activity_name.lower()}%")
+
+    sql += """
+    GROUP BY
+        UPPER(oda."Location"),
+        COALESCE(ada."DESCRIPTION", oda."Description", 'Unknown')
+    ORDER BY last_actual_start DESC;
+    """
+
+    t0 = time.time()
+    cur = con.execute(sql, params_list)
+    cols = [d[0] for d in cur.description] if cur.description else []
+    rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+    elapsed = int((time.time() - t0) * 1000)
+    return {
+        "rows": rows,
+        "rowcount": len(rows),
+        "elapsed_ms": elapsed
+    }
+
+def _tpl_activity_due_within_window(con: sqlite3.Connection, params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Returns last activity date per park for a given maintenance activity along with days since service.
+    Params:
+        {
+            "activity_name": str (required),
+            "weeks_ahead": int (required),
+            "park_name": str (optional)
+        }
+    """
+    activity_name = (params or {}).get("activity_name")
+    weeks_ahead = (params or {}).get("weeks_ahead")
+    park_name = (params or {}).get("park_name")
+
+    if not activity_name or not weeks_ahead:
+        return {
+            "rows": [{"error": "activity_name and weeks_ahead are required"}],
+            "rowcount": 1,
+            "elapsed_ms": 0
+        }
+
+    try:
+        weeks_ahead = int(weeks_ahead)
+    except (TypeError, ValueError):
+        return {
+            "rows": [{"error": "weeks_ahead must be an integer"}],
+            "rowcount": 1,
+            "elapsed_ms": 0
+        }
+
+    horizon_days = weeks_ahead * 7
+
+    sql = """
+    WITH activity AS (
+        SELECT
+            UPPER(oda."Location") AS location,
+            COALESCE(ada."DESCRIPTION", oda."Description", 'Unknown') AS activity_description,
+            MAX(DATE(oda."Actual start")) AS last_service_date,
+            COUNT(*) AS total_orders
+        FROM order_data oda
+        LEFT JOIN activity_type_data ada
+            ON CAST(oda."MaintActivType" AS TEXT) = CAST(ada."CODE" AS TEXT)
+        WHERE
+            oda."Actual start" IS NOT NULL
+            AND LOWER(COALESCE(ada."DESCRIPTION", oda."Description", '')) LIKE ?
+            {park_clause}
+        GROUP BY
+            UPPER(oda."Location"),
+            COALESCE(ada."DESCRIPTION", oda."Description", 'Unknown')
+    )
+    SELECT
+        location,
+        activity_description,
+        last_service_date,
+        ROUND(JULIANDAY('now') - JULIANDAY(last_service_date), 1) AS days_since_last,
+        total_orders,
+        ? AS weeks_ahead,
+        ? AS horizon_days
+    FROM activity
+    ORDER BY days_since_last DESC NULLS LAST;
+    """
+
+    park_clause = ""
+    params_list: List[Any] = [f"%{activity_name.lower()}%"]
+    if park_name:
+        park_clause = "AND UPPER(oda.\"Location\") LIKE ?"
+        params_list.append(f"%{park_name.upper()}%")
+    sql = sql.format(park_clause=park_clause)
+    params_list.extend([weeks_ahead, horizon_days])
+
+    t0 = time.time()
+    cur = con.execute(sql, params_list)
+    cols = [d[0] for d in cur.description] if cur.description else []
+    rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+    elapsed = int((time.time() - t0) * 1000)
+    return {
+        "rows": rows,
+        "rowcount": len(rows),
+        "elapsed_ms": elapsed,
+        "chart_type": "timeline",
+        "horizon_days": horizon_days
+    }
+
 # -----------------------------
 # Dispatcher registry
 # -----------------------------
@@ -498,6 +641,11 @@ TEMPLATE_REGISTRY: Dict[str, Callable[[sqlite3.Connection, Dict[str, Any]], Dict
     "mowing.cost_by_park_least_per_sqft": _tpl_mowing_cost_least_per_sqft,
     # NEW: Activity cost by park within a range
     "activity.cost_by_location_range": _tpl_activity_cost_by_location,
+    # NEW: Latest activity dates by park
+    "activity.last_activity_date": _tpl_activity_latest_by_location,
+    # NEW: Maintenance due window
+    "activity.maintenance_due_window": _tpl_activity_due_within_window
+    #NEW: Add more templates here as needed
 }
 
 # -----------------------------

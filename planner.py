@@ -90,6 +90,16 @@ class ExecutionPlanner:
                 "builder": self._build_activity_cost_params,
                 "required": ["park_name", "month1", "month2", "year1", "year2"],
                 "optional": ["activity_name"]
+            },
+            "activity.last_activity_date": {
+                "builder": self._build_last_activity_date_params,
+                "required": ["park_name"],
+                "optional": ["activity_name"]
+            },
+            "activity.maintenance_due_window": {
+                "builder": self._build_activity_due_params,
+                "required": ["activity_name", "weeks_ahead"],
+                "optional": ["park_name"]
             }
         }
 
@@ -226,11 +236,16 @@ class ExecutionPlanner:
 
         # RAG retrieval keywords for context (kept lightweight)
         rag_keywords = "mowing maintenance cost frequency staffing inspection policy standards"
+        kb_filters = None
+        if slots.get("domain") == "activity":
+            base_kw = slots.get("activity_name") or "maintenance activity"
+            rag_keywords = f"{base_kw} frequency interval guidelines maintenance"
+            kb_filters = {"category": "activity"}
 
         tool_chain: List[Dict[str, Any]] = []
         if not clarifications:
             tool_chain = [
-                {"tool": "kb_retrieve", "args": {"query": rag_keywords, "top_k": 3}},
+                {"tool": "kb_retrieve", "args": {"query": rag_keywords, "top_k": 3, "filters": kb_filters}},
                 {"tool": "sql_query_rag", "args": {"template": template, "params": params}}
             ]
 
@@ -394,9 +409,15 @@ class ExecutionPlanner:
                 return "mowing.cost_by_park_least_per_sqft"
         # Handle activity domain
         if domain == "activity":
+            # Pattern 11: Maintenance due within a time window
+            if slots.get("weeks_ahead") or ("need" in lowq and "week" in lowq):
+                return "activity.maintenance_due_window"
             # Pattern 9: Activity/maintenance cost within a park and date range
             if "cost" in lowq and "in" in lowq and (("from" in lowq and " to " in lowq) or "between" in lowq):
                 return "activity.cost_by_location_range"
+            # Pattern 10: Last activity date for a park
+            if any(k in lowq for k in ["last", "recent", "latest", "when was"]):
+                return "activity.last_activity_date"
 
         # No supported template matched
         return None
@@ -444,7 +465,19 @@ class ExecutionPlanner:
             "year2": slots.get("year2"),
             "activity_name": slots.get("activity_name")
         }
-
+    def _build_last_activity_date_params(self, slots: Dict[str, Any]) -> Dict[str, Any]:
+        """Build parameters for last activity date query"""
+        return {
+            "park_name": slots.get("park_name"),
+            "activity_name": slots.get("activity_name")
+        }
+    def _build_activity_due_params(self, slots: Dict[str, Any]) -> Dict[str, Any]:
+        """Build parameters for maintenance due-within-window query"""
+        return {
+            "activity_name": slots.get("activity_name"),
+            "weeks_ahead": slots.get("weeks_ahead"),
+            "park_name": slots.get("park_name")
+        }
     # ========== PARAMETER VALIDATION ==========
     def _validate_params(self, template: str, params: Dict[str, Any], config: Dict[str, Any]) -> List[str]:
         """
@@ -468,6 +501,10 @@ class ExecutionPlanner:
             clarifications.append("Please specify the start month, end month, start year, and end year for the period.")
         elif template == "activity.cost_by_location_range":
             clarifications.append("Please provide the park name along with start and end month/year (e.g., from March 2024 to May 2024).")
+        elif template == "activity.last_activity_date":
+            clarifications.append("Please provide the park name for which you want to know the last activity date.")
+        elif template == "activity.maintenance_due_window":
+            clarifications.append("Please specify the maintenance activity (e.g., mowing) and the horizon in weeks.")
         return clarifications
     
     def _build_rag_keywords(self, slots: Dict[str, Any]) -> str:

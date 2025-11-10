@@ -40,6 +40,8 @@ export default function App() {
         "What are the dimensions for U15 soccer?",
         "Show me baseball field requirements for U13",
         "What's the pitching distance for female softball U17?",
+        "What is the latest activity in Stanley?",
+        "Which parks need Leaf Removal in 10 weeks?"
       ],
     },
     {

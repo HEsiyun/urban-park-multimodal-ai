@@ -31,3 +31,6 @@ data/
 
 # SQLite database files
 *.sqlite3
+
+# experiment outputs
+experiment/results/

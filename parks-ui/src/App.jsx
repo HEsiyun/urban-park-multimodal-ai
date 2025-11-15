@@ -40,6 +40,8 @@ export default function App() {
         "What are the dimensions for U15 soccer?",
         "Show me baseball field requirements for U13",
         "What's the pitching distance for female softball U17?",
+        "What is the latest activity in Stanley?",
+        "Which parks need Leaf Removal in 10 weeks?"
       ],
     },
     {
@@ -378,7 +380,7 @@ export default function App() {
     });
 
     return (
-      <div style={{ padding: "20px 0" }}>
+      <div className="timeline-scroll">
         {sortedData.map((item, idx) => (
           <div
             key={idx}
@@ -765,13 +767,13 @@ export default function App() {
           </aside>
         </div>
 
-        <section className="card">
+        <section className="card response-card">
           <div className="label">Response</div>
           {!resp && (
             <div className="muted">No response yet. Try a query above!</div>
           )}
           {resp && (
-            <div className="stack">
+            <div className="stack response-content">
               {activeTab === "agent" && (
                 <StatusBanner status={resp.status} message={resp.message} />
               )}

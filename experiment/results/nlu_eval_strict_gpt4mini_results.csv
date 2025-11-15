@@ -1,0 +1,51 @@
+text,reference,reference_norm,predicted,model_output,is_correct,prompt_tokens,completion_tokens,total_tokens,source,timestamp,response_id
+Describe the correct process for trimming park lawns.,RAG,RAG,RAG,RAG,True,173,3,176,api,1762787312.379603,resp_0fc163f210142359006911ffef7a348197b9bb55fe8e31336e
+How should mowing blades be adjusted for safety?,RAG,RAG,RAG,RAG,True,173,3,176,api,1762787313.648233,resp_0f9bca37e5a302b8006911fff088408193844a4bc341164d96
+What are the basic turf maintenance rules for summer?,RAG,RAG,RAG,RAG,True,174,3,177,api,1762787315.4517,resp_02a6321b0c586dc5006911fff1e0bc81959ad5725be32999fe
+Give me the official mowing protocol for public fields.,RAG,RAG,RAG,RAG,True,174,3,177,api,1762787317.316436,resp_065c65a0e4abf01c006911fff3c2248196be9e5ddd7cdebd34
+Outline how to prepare turf before large events.,RAG,RAG,RAG,RAG,True,173,3,176,api,1762787323.6427991,resp_0ec7f6157489cb2a006911fff57b6c819398b6eca923defab2
+Explain how to safely refuel and clean a mower.,RAG,RAG,RAG,RAG,True,175,3,178,api,1762787324.457282,resp_0e4dbe4aa8637e48006911fffbd258819685285b5a23be69e0
+List inspection steps before operating mowing equipment.,RAG,RAG,RAG,RAG,True,172,3,175,api,1762787325.27833,resp_09e4c4f14d4a5cdb006911fffc9f388190b96161d26fc48c85
+What is the standard grass height for soccer practice areas?,RAG,RAG,RAG,RAG,True,175,3,178,api,1762787326.431319,resp_09f724c2472358b1006911fffd733881938a41dd4125a0e2f3
+How often should turf be aerated under heavy use?,RAG,RAG,RAG,RAG,True,175,3,178,api,1762787327.325817,resp_020ccde3d8ffa494006911fffe98348193a2cf1a6d5a945013
+Summarize recommended post-mowing cleanup procedures.,RAG,RAG,RAG,RAG,True,174,3,177,api,1762787328.246882,resp_06b6f39d1c9a9115006911ffff7e10819487439ede86f81223
+Show total mowing cost by park for Q2 2025.,SQL_tool,SQL_tool,SQL_tool,SQL_tool,True,177,3,180,api,1762787329.1687639,resp_09bfcdc9735ac3d6006912000066dc8195afb7024c717973f3
+Give me average mowing hours per week this May.,SQL_tool,SQL_tool,SQL_tool,SQL_tool,True,174,3,177,api,1762787330.468747,resp_057adc0fb7cb301e0069120001531081938de30da0d3c31bf4
+List top 10 parks by irrigation repair cost.,SQL_tool,SQL_tool,SQL_tool,SQL_tool,True,174,3,177,api,1762787331.319403,resp_0c996f180dc670100069120002a090819683e5bace75e162bd
+Display mowing frequency by park for July.,SQL_tool,SQL_tool,SQL_tool,SQL_tool,True,172,3,175,api,1762787332.344913,resp_03f61d4f39d0ead500691200037a5481948cfb478229fb2937
+Fetch the park with the lowest mowing expense in April.,SQL_tool,SQL_tool,SQL_tool,SQL_tool,True,175,3,178,api,1762787333.264808,resp_0fcc7254fa49368a0069120004807c8196befcb7e14ef87769
+Return number of mowing operations completed last month.,SQL_tool,SQL_tool,SQL_tool,SQL_tool,True,173,3,176,api,1762787335.2125561,resp_0185bd555207088e0069120005a4d081979e26e0ff7141a5e5
+Provide total maintenance cost for June 2025 as a table.,SQL_tool,SQL_tool,SQL_tool,SQL_tool,True,177,3,180,api,1762787337.361844,resp_0296eb6deeeb8dd3006912000772248197bcde45d985e7a181
+Show ranking of parks by total mowing labor hours.,SQL_tool,SQL_tool,SQL_tool,SQL_tool,True,174,3,177,api,1762787340.843071,resp_0d9eb87d0682a81d0069120009bf24819091d9fa01d3834a4a
+Get monthly mowing expenses for each district.,SQL_tool,SQL_tool,SQL_tool,SQL_tool,True,172,3,175,api,1762787343.9723232,resp_0eac833683c8f84b006912000d017c8193a000af196954f100
+List mean and median mowing cost per park this quarter.,SQL_tool,SQL_tool,SQL_tool,SQL_tool,True,175,3,178,api,1762787344.915574,resp_017edd1d836c264f006912001023008197aa78694d4461bc50
+Interpret why mowing expenses increased in April compared to March using mowing policies.,RAG+SQL_tool,RAG+SQL_tool,RAG,RAG,False,178,3,181,api,1762787345.960247,resp_0c41f7f64f166dd4006912001114e08195b4342c5e6e66e12c
+Explain cost variation across parks based on mowing interval recommendations.,RAG+SQL_tool,RAG+SQL_tool,RAG+SQL_tool,RAG+SQL_tool,True,175,6,181,api,1762787347.496448,resp_016d57f0ef69fcae00691200124db88196825e859a7156b5e0
+Discuss if July mowing costs align with approved maintenance frequency.,RAG+SQL_tool,RAG+SQL_tool,RAG+SQL_tool,RAG+SQL_tool,True,175,6,181,api,1762787348.622951,resp_0333df30d46280dc0069120013a6b081978b9affad35c7384a
+Analyze whether irrigation spending in Q2 follows standard repair schedules.,RAG+SQL_tool,RAG+SQL_tool,RAG+SQL_tool,RAG+SQL_tool,True,176,6,182,api,1762787349.956863,resp_0ce8f184d866e95c0069120014c7548190930d0b8e77074c59
+Evaluate high mowing cost trends with respect to staff allocation norms.,RAG+SQL_tool,RAG+SQL_tool,RAG+SQL_tool,RAG+SQL_tool,True,176,6,182,api,1762787351.390547,resp_01739e64c79050d400691200161fb48196b76aeca02c34c73b
+Provide reasoning for decreased mowing hours using turf condition policies.,RAG+SQL_tool,RAG+SQL_tool,RAG,RAG,False,175,3,178,api,1762787352.851404,resp_0e2cdc584f9491d900691200178ed8819091a4a96eb82afa20
+Assess if August mowing data matches standard seasonal frequency.,RAG+SQL_tool,RAG+SQL_tool,RAG+SQL_tool,RAG+SQL_tool,True,174,6,180,api,1762787359.068008,resp_096d094845a118ed006912001906f081908875a6ed536a6020
+Discuss correlation between mowing labor cost and weather conditions referencing SOPs.,RAG+SQL_tool,RAG+SQL_tool,RAG,RAG,False,177,3,180,api,1762787359.993016,resp_0f1077f5f9071932006912001f37e481968d4c0ccceabfd366
+Explain cost efficiency differences among parks using mowing best practices.,RAG+SQL_tool,RAG+SQL_tool,RAG,RAG,False,175,3,178,api,1762787361.117117,resp_0197f80e955700230069120020270481949e4e5bdcb63aacb2
+Summarize if Q3 2024 mowing costs meet operational benchmarks.,RAG+SQL_tool,RAG+SQL_tool,RAG+SQL_tool,RAG+SQL_tool,True,179,6,185,api,1762787366.647517,resp_070fbec9b331ce4f006912002146ac819581b6dd034770d8af
+Look at this picture and explain whether mowing is due according to standards.,RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,True,178,6,184,api,1762787368.385834,resp_0453d801e21f6faf0069120026df788194b8fb7ff9d39f51ed
+"From this image, judge turf quality and reference mowing policy.",RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,True,176,6,182,api,1762787370.536866,resp_0f9ab7a16dac7e650069120028aa3881958cc49102a6c954bb
+Analyze this field photo and describe what maintenance should be scheduled.,RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,True,176,6,182,api,1762787371.562803,resp_0bb7b641a03647f3006912002ab57081978eab3f0ea9c7a958
+Check this image and tell me if mowing height meets the guideline.,RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,True,177,6,183,api,1762787372.8934422,resp_0ae0807942223869006912002bbadc819783e91368042b446e
+Use the picture to determine soil compaction and recommend action per SOP.,RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,True,178,6,184,api,1762787374.330615,resp_0d522122b47c2915006912002d0ad881969869d63efe93cbdd
+"Based on this photo, suggest next maintenance steps referencing mowing frequency rules.",RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,True,178,6,184,api,1762787375.454879,resp_00aa2a7fe1c96fc2006912002e7c688194b19f92f604de4eec
+Examine this image and cite mowing procedures relevant to visible damage.,RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,True,177,6,183,api,1762787376.679681,resp_0ea042e9eb07831b006912002f9b588194a78969a69333b5c5
+Review this field photo and discuss mowing uniformity with reference to regulation height.,RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,True,179,6,185,api,1762787378.118206,resp_00282af06306d4b70069120030d6488193b5a1581e316b32b7
+"Using this image, decide if the area needs mowing per standard thresholds.",RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,True,178,6,184,api,1762787379.653246,resp_0e9b455f05ee86b8006912003245208196a91989238979c196
+Assess this picture and explain maintenance tasks according to policy.,RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,RAG+CV_tool,True,175,6,181,api,1762787380.779688,resp_0753aa4e20fa2a410069120033cc5c819796220d23203e6c81
+Evaluate the turf condition shown in this image.,CV_tool,CV_tool,CV_tool,CV_tool,True,173,3,176,api,1762787383.030669,resp_04981a2a1b4d4b060069120035323481979f426cee4efe8508
+Rate the field surface from this picture.,CV_tool,CV_tool,CV_tool,CV_tool,True,172,3,175,api,1762787384.363212,resp_0f8db1313141dbd200691200372fbc8193b0924daca92eedf6
+Identify visible issues in the uploaded photo.,CV_tool,CV_tool,CV_tool,CV_tool,True,172,3,175,api,1762787385.591968,resp_02b16cec38e4cb8d0069120038879c8193b87bb39a1c9a8837
+Assess turf evenness from the provided image.,CV_tool,CV_tool,CV_tool,CV_tool,True,173,3,176,api,1762787386.9206269,resp_06c715a8c669dc1c0069120039bf8c8190a488d1b736f01094
+Judge mowing quality in this field picture.,CV_tool,CV_tool,CV_tool,CV_tool,True,172,3,175,api,1762787388.151842,resp_06eed3f5f441d81f006912003b114c8193b5eb9746c05b4563
+"From this image, rate turf density from 1 to 5.",CV_tool,CV_tool,CV_tool,CV_tool,True,178,3,181,api,1762787389.069741,resp_0c201b9351982fd6006912003c50d081948f92c174a0a6a1c3
+Detect any bare patches in this photo.,CV_tool,CV_tool,CV_tool,CV_tool,True,172,3,175,api,1762787389.991667,resp_0009e10930a1644d006912003d3d608197be97a963ff212521
+Check if the grass appears overgrown in this image.,CV_tool,CV_tool,CV_tool,CV_tool,True,175,3,178,api,1762787391.188309,resp_015344ddc9f333b0006912003e25348195a79388ff1792705d
+Classify the field condition based on the picture.,CV_tool,CV_tool,CV_tool,CV_tool,True,174,3,177,api,1762787392.145503,resp_08592b86aa58e825006912003f65648190ad1a15749dde42b7
+Visually estimate mowing height from the image only.,CV_tool,CV_tool,CV_tool,CV_tool,True,174,3,177,api,1762787393.16887,resp_0822759d09f9abf500691200404c1c8195a2b96698a3ee8033

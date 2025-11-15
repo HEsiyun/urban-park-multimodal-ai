@@ -1,0 +1,154 @@
+# Maintenance Activity Reference Guide
+
+This document lists maintenance activity codes used by the Parks Department, including their descriptions, purposes, and typical maintenance frequencies.  
+Frequencies are expressed as **typical intervals under normal seasonal conditions** (April–October for most outdoor activities).
+
+---
+
+## 100 – Pest Control
+- **Description:** Control of bugs and small pests within park areas.
+- **Frequency:** Every 8 weeks or as needed (higher during summer months).
+- **Notes:** Target ant nests, wasps, and other minor infestations. Major infestations require special work orders.
+
+## 110 – Refuse Removal / Tide Line Cleanup
+- **Description:** Garbage and debris cleanup along tide lines and park perimeters.
+- **Frequency:** Weekly during summer, biweekly during off-season.
+- **Notes:** Focused on litter not placed in bins; excludes log removal or sand screening.
+
+## 115 – Paper Picking
+- **Description:** Manual removal of litter and small debris from park grounds.
+- **Frequency:** 2–3 times per week for high-traffic parks; weekly elsewhere.
+
+## 120 – Regular Maintenance
+- **Description:** General upkeep of unnamed park sites or public monuments.
+- **Frequency:** Monthly inspection and servicing.
+- **Notes:** Includes 9 O’Clock Gun and miscellaneous heritage sites.
+
+## 160 – Snow Removal
+- **Description:** Snow and ice clearing in winter months.
+- **Frequency:** As required (weather-dependent, typically after each snow event).
+- **Notes:** Major events handled separately from routine control.
+
+## 205 – Tree Maintenance
+- **Description:** Pruning, trimming, and care of trees (not arborist-level tasks).
+- **Frequency:** Every 12–16 weeks or as scheduled by seasonal pruning plan.
+- **Notes:** Does not include urban forestry (U/F) or arborist work.
+
+## 210 – Natural Turf Care
+- **Description:** General turf health management, including fertilization and aeration.
+- **Frequency:** Every 4 weeks during growing season.
+- **Notes:** Overseeding typically once per year.
+
+## 215 – Beds Maintenance
+- **Description:** Maintenance of flowerbeds and shrub beds.
+- **Frequency:** Every 2–3 weeks during spring and summer.
+- **Notes:** Includes weeding, soil turning, and deadheading.
+
+## 220 – Invasive Species and Plants
+- **Description:** Removal or treatment of invasive vegetation.
+- **Frequency:** Every 8–12 weeks or as required by inspection.
+- **Notes:** Commonly performed alongside turf care.
+
+## 230 – Leaf Removal
+- **Description:** Collection and disposal of fallen leaves.
+- **Frequency:** Weekly during peak fall season (October–December).
+- **Notes:** May increase with heavy leaf fall.
+
+## 235 – Goose Waste Removal
+- **Description:** Cleaning of areas affected by goose droppings.
+- **Frequency:** Weekly or as needed in affected areas.
+- **Notes:** Priority in public lawns and sports fields.
+
+## 240 – Horticulture Water / Irrigation
+- **Description:** Watering of horticultural beds not handled by Parks Irrigation team.
+- **Frequency:** Every 1–2 days during hot/dry weather; weekly otherwise.
+
+## 245 – Water Bodies Maintenance
+- **Description:** Maintenance of ponds, creeks, and water features.
+- **Frequency:** Every 4 weeks during spring–fall.
+- **Notes:** Includes litter removal, surface skimming, and algae control.
+
+## 250 – Course Grooming
+- **Description:** Work inside golf courses by area crews.
+- **Frequency:** Every 1–2 weeks during golf season.
+- **Notes:** Rarely scheduled; limited to city-operated courses.
+
+## 255 – Ball Diamonds Maintenance
+- **Description:** Leveling, raking, and preparation of baseball diamonds.
+- **Frequency:** Weekly during sport season (April–September).
+- **Notes:** Prior to scheduled games or events.
+
+## 260 – “A” Fields Maintenance
+- **Description:** Irrigated sports fields (A fields).
+- **Frequency:** Mowing and inspection every 2 weeks.
+- **Notes:** Fertilization 2–3 times per season.
+
+## 265 – “A” Fields Mowing
+- **Description:** Grass mowing for irrigated “A” fields.
+- **Frequency:** Every 2 weeks (weekly during peak growth).
+- **Notes:** Maintain turf height between 1.5–2.5 inches.
+
+## 270 – “B” Fields Maintenance
+- **Description:** Non-irrigated sports fields (B fields).
+- **Frequency:** Mowing every 3–4 weeks.
+- **Notes:** Subject to drought and weather conditions.
+
+## 275 – “B” Fields Mowing
+- **Description:** Grass mowing for non-irrigated “B” fields.
+- **Frequency:** Every 3–4 weeks.
+- **Notes:** May be skipped during drought to prevent turf stress.
+
+## 280 – Passive Turf Mow / Maintenance
+- **Description:** Mowing and upkeep of passive turf (non-sports areas).
+- **Frequency:** Every 4–6 weeks.
+- **Notes:** Includes park lawns and general open spaces.
+
+## 285 – Beach Cleanup
+- **Description:** Cleaning sand, removing litter and debris from beaches.
+- **Frequency:** Weekly during summer; monthly during off-season.
+- **Notes:** Excludes log removal or sand screening.
+
+## 290 – Administration
+- **Description:** Crew talks, training, and coordination meetings.
+- **Frequency:** As scheduled (typically weekly).
+- **Notes:** Non-field activity.
+
+## 295 – Artificial Turf Fields
+- **Description:** Maintenance of synthetic sports fields.
+- **Frequency:** Every 2 weeks for brushing and debris removal.
+- **Notes:** Includes infill leveling and cleaning.
+
+## 335 – Forest Fire Suppression
+- **Description:** Preventive and responsive actions related to wildfires.
+- **Frequency:** As needed; seasonal risk monitoring every 2 weeks in summer.
+- **Notes:** New activity due to climate change impact.
+
+## 345 – Grounds Maintenance
+- **Description:** General wood debris and site cleanup (STP).
+- **Frequency:** Monthly or post-storm as needed.
+- **Notes:** Covers park perimeters and wooded zones.
+
+## 375 – Path / Court / Parking Maintenance
+- **Description:** Maintenance of asphalt and concrete areas in parks.
+- **Frequency:** Every 8–12 weeks for inspection and sweeping.
+- **Notes:** Includes crack filling and litter removal.
+
+## 380 – Unpaved Surface Maintenance
+- **Description:** Grading and repair of non-grassy areas and trails.
+- **Frequency:** Every 8 weeks or after heavy rainfall events.
+- **Notes:** Focused on erosion and drainage correction.
+
+## 385 – Playground Resilient Surface
+- **Description:** Cleaning and inspection of playground surfaces.
+- **Frequency:** Every 4 weeks; immediate response to visible hazards.
+- **Notes:** Repairs handled by Structures team.
+
+## 390 – Log Removal
+- **Description:** Removal of driftwood or large logs from beaches or fields.
+- **Frequency:** Monthly or after storms.
+- **Notes:** Often coordinated with beach cleanup.
+
+## 395 – Sand Screening
+- **Description:** Mechanical screening and leveling of sand areas.
+- **Frequency:** Every 6 weeks during summer.
+- **Notes:** Maintain clean and even beach/play area surfaces.

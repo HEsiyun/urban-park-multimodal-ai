@@ -1,6 +1,6 @@
 # composer.py - Response Composition Layer (Adapted for Refactored Architecture)
 from __future__ import annotations
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import re
 
 # ========== LLM Integration (Ollama Only) ==========
@@ -28,7 +28,7 @@ _MOWING_METRIC_PATTERNS = [
     ("weed_tolerance_pct", r"weed\s*tolerance.*?<\s*(\d+)\s*%", lambda s: s),
     ("bare_ground_pct", r"bare\s*ground.*?<\s*(\d+)\s*%", lambda s: s),
 ]
-
+# extract mowing standards from text snippets
 def _extract_mowing_standards_from_text(text: str) -> dict:
     found: Dict[str, str] = {}
     t = " ".join(line.strip() for line in (text or "").splitlines() if line.strip())
@@ -52,43 +52,89 @@ def _extract_mowing_standards_from_hits(hits: List[Dict[str, Any]]) -> dict:
             if v and k not in merged:
                 merged[k] = v
     return merged
+# extract activity frequency from text snippets
+def _extract_activity_frequency_from_hits(
+    hits: List[Dict[str, Any]], activity_name: Optional[str]
+) -> Dict[str, Any]:
+    """
+    Surface the first frequency line that matches the requested activity.
+    """
+    target = (activity_name or "").lower()
+    best: Dict[str, Any] = {}
 
-
-# ========= Lightweight standards extraction (works well with short TXT standards) =========
-_MOWING_METRIC_PATTERNS = [
-    ("grass_length_cm", r"grass\s*length.*?(\d+\s*-\s*\d+)\s*cm", lambda s: s.replace(" ", "")),
-    ("cutting_height_cm", r"cutting\s*height.*?(\d+(?:\.\d+)?)\s*cm", lambda s: s),
-    ("drainage_max_hours", r"(?:percolation|standing\s*water).*?(\d+)\s*hour", lambda s: s),
-    ("mowing_frequency", r"every\s+(\d+)\s+working\s+days", lambda s: s),
-    ("weed_tolerance_pct", r"weed\s*tolerance.*?<\s*(\d+)\s*%", lambda s: s),
-    ("bare_ground_pct", r"bare\s*ground.*?<\s*(\d+)\s*%", lambda s: s),
-]
-
-def _extract_mowing_standards_from_text(text: str) -> dict:
-    found: Dict[str, str] = {}
-    t = " ".join(line.strip() for line in (text or "").splitlines() if line.strip())
-    for key, pat, norm in _MOWING_METRIC_PATTERNS:
-        m = re.search(pat, t, flags=re.I)
-        if m:
-            try:
-                found[key] = norm(m.group(1))
-            except Exception:
-                found[key] = m.group(1)
-    return found
-
-def _extract_mowing_standards_from_hits(hits: List[Dict[str, Any]]) -> dict:
-    merged: Dict[str, str] = {}
-    for h in hits[:3]:
-        snippet = h.get("text", "") or ""
-        if not snippet:
+    for h in hits:
+        text = h.get("text", "") or ""
+        if not text:
             continue
-        cur = _extract_mowing_standards_from_text(snippet)
-        for k, v in cur.items():
-            if v and k not in merged:
-                merged[k] = v
-    return merged
+        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+        freq_line = None
+        for ln in lines:
+            if "frequency" in ln.lower():
+                freq_line = ln
+                break
+        if not freq_line:
+            continue
+        freq_text = re.sub(r"(?i)^[-•]*\s*(\*\*frequency:\*\*|frequency:)\s*", "", freq_line).strip()
+        entry = {
+            "frequency": freq_text,
+            "raw_line": freq_line,
+            "source": h.get("source", ""),
+            "snippet": text.strip()
+        }
+        if target and target in text.lower():
+            return entry
+        if not best:
+            best = entry
+    return best
 
+def _estimate_cycle_days_from_text(text: Optional[str]) -> Optional[float]:
+    """
+    Convert textual frequency (e.g., '2–3 times per week') into approximate days per cycle.
+    """
+    if not text:
+        return None
+    t = text.lower()
 
+    def _parse_range(m: re.Match) -> float:
+        start = float(m.group(1))
+        end = m.group(2)
+        if end:
+            return (start + float(end)) / 2.0
+        return start
+
+    # every X-Y weeks
+    m = re.search(r"every\s+(\d+(?:\.\d+)?)\s*(?:-|–|—)?\s*(\d+(?:\.\d+)?)?\s*week", t)
+    if m:
+        return _parse_range(m) * 7.0
+
+    # every X-Y days
+    m = re.search(r"every\s+(\d+(?:\.\d+)?)\s*(?:-|–|—)?\s*(\d+(?:\.\d+)?)?\s*day", t)
+    if m:
+        return _parse_range(m)
+
+    # X-Y times per week
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(?:-|–|—)?\s*(\d+(?:\.\d+)?)?\s*(?:times\s+)?per\s+week", t)
+    if m:
+        avg = _parse_range(m)
+        if avg > 0:
+            return 7.0 / avg
+
+    if "biweekly" in t or "every other week" in t:
+        return 14.0
+    if "weekly" in t:
+        return 7.0
+    if "monthly" in t:
+        return 30.0
+    if "daily" in t or "every day" in t:
+        return 1.0
+    return None
+
+    # （删除了重复的 mowing 标准提取代码段）
+    # 这里原本是一段与前面完全相同的 _MOWING_METRIC_PATTERNS /
+    # _extract_mowing_standards_from_text / _extract_mowing_standards_from_hits 实现，
+    # 会导致函数和常量重复定义。保留文件前面那一份即可，这里安全删除。
+
+# ========= RAG Context Summarization, with Fallback ==========
 def _summarize_rag_context(
     rag_snippets: List[Dict[str, Any]],
     query: str,
@@ -271,7 +317,7 @@ def _snip(txt: str, n: int = 150) -> str:
     s = re.sub(r"\s+", " ", (txt or "")).strip()
     return (s[:n] + "...") if len(s) > n else s
 
-
+# ========== Main Composition Function being called externally ==========
 def compose_answer(
     nlu: Dict[str, Any],
     state: Dict[str, Any],
@@ -322,6 +368,9 @@ def compose_answer(
     slots = nlu.get("slots", {}) or state.get("slots", {})
     explanation_requested = bool(slots.get("explanation_requested"))
 
+    activity_context: Dict[str, Any] = {}
+    activity_cycle_days: Optional[float] = None
+
     header = []
     if intent:
         header.append(f"**Workflow:** `{intent}`")
@@ -342,6 +391,7 @@ def compose_answer(
         ])
 
         standards = _extract_mowing_standards_from_hits(kb_hits) if kb_hits else {}
+        rag_section_added = False
 
         if is_mowing_query and standards:
             answer_md += "**Maintenance Standards Summary**\n\n"
@@ -366,8 +416,30 @@ def compose_answer(
 
             for h in kb_hits[:3]:
                 citations.append({"title": "Maintenance Standards", "source": h.get("source", "")})
+            rag_section_added = True
 
-        elif kb_hits and intent == "RAG":
+        if not rag_section_added and kb_hits and slots.get("domain") == "activity":
+            activity_context = _extract_activity_frequency_from_hits(kb_hits, slots.get("activity_name"))
+            freq_text = activity_context.get("frequency")
+            if freq_text:
+                activity_cycle_days = _estimate_cycle_days_from_text(freq_text)
+                if activity_cycle_days:
+                    activity_context["cycle_days"] = activity_cycle_days
+                activity_label = (slots.get("activity_name") or "Requested activity").title()
+                answer_md += "**Activity Frequency Reference**\n\n"
+                freq_line = freq_text
+                if activity_cycle_days:
+                    freq_line += f" (~every {activity_cycle_days:.1f} days)"
+                answer_md += f"- **{activity_label}**: {freq_line}\n"
+                src = activity_context.get("source")
+                if src:
+                    citations.append({"title": "Activity Reference", "source": src})
+                else:
+                    for h in kb_hits[:2]:
+                        citations.append({"title": "Activity Reference", "source": h.get("source", "")})
+                rag_section_added = True
+
+        if not rag_section_added and kb_hits and intent == "RAG":
             answer_md += "### Reference Summary\n\n"
             if LLM_AVAILABLE:
                 try:
@@ -389,27 +461,69 @@ def compose_answer(
     # ========== SQL content handling ==========
     if intent in ("SQL_tool", "RAG+SQL_tool"):
         sql = ev.get("sql", {})
-        rows = sql.get("rows", [])
+        rows = sql.get("rows") or []
 
-        chart_config = _detect_chart_type(rows, template_hint)
+        # Base data used by all SQL templates
+        annotated_rows = rows
+        due_groups: Dict[str, List[Dict[str, Any]]] = {}
+        horizon_days: Optional[float] = None
+
+        # ---- Template-specific enrichments / annotations ----
+        # NOTE: When adding new SQL templates that need extra processing,
+        #       follow this pattern and keep all template-specific logic
+        #       in this section, before charts/tables/summary.
+        if template_hint == "activity.maintenance_due_window":
+            annotated_rows, due_groups, horizon_days = _annotate_due_rows(
+                rows,
+                activity_cycle_days,
+                slots.get("weeks_ahead")
+            )
+
+        # TODO: add more template-specific post-processing here as needed
+        # e.g.
+        # elif template_hint == "some.new_template":
+        #     annotated_rows = _post_process_new_template(rows, slots)
+
+        # ---- Generic chart + table generation (template-agnostic) ----
+        chart_config = _detect_chart_type(annotated_rows, template_hint)
         if chart_config:
             charts.append(chart_config)
 
-        if rows:
+        if annotated_rows:
             tables.append({
                 "name": _get_table_name(template_hint, slots),
-                "columns": list(rows[0].keys()),
-                "rows": rows
+                "columns": list(annotated_rows[0].keys()),
+                "rows": annotated_rows
             })
 
-        sql_summary = _generate_sql_summary(rows, template_hint, slots)
-        
+        # ---- Generic SQL summary generation ----
+        sql_summary = _generate_sql_summary(annotated_rows, template_hint, slots)
+
+        # ---- Template-specific summary augmentations ----
+        if template_hint == "activity.maintenance_due_window":
+            due_md = _format_due_window_summary(
+                due_groups,
+                horizon_days,
+                activity_context,
+                slots.get("weeks_ahead")
+            )
+            if due_md:
+                sql_summary += "\n\n" + due_md
+
+        # TODO: add more template-specific summary extensions here
+        # e.g.
+        # elif template_hint == "some.new_template":
+        #     sql_summary += "\n\n" + _extra_summary_for_new_template(annotated_rows)
+
+        # ---- Final answer composition for SQL part ----
         if answer_md:
             answer_md += "\n\n"
-        
+
         answer_md += sql_summary
-        answer_md += f"\n\n**Query Performance**: {sql.get('rowcount',0)} rows in {sql.get('elapsed_ms',0)}ms"
-        
+        answer_md += (
+            f"\n\n**Query Performance**: "
+            f"{sql.get('rowcount', 0)} rows in {sql.get('elapsed_ms', 0)}ms"
+        )
         # 伪造RAG hits以供后续处理
         if intent == "SQL_tool_2":
             ev["kb_hits"] = [{"page": "1", "text": "Criteria For Softball Female - U17: Dimension Home to Pitchers Plate should be greater than 12.9m and less than 13.42m; Home to First Base Path should be greater than 17.988m and less than 18.588m"}]
@@ -533,6 +647,8 @@ def _get_table_name(template_hint: Optional[str], slots: Dict[str, Any]) -> str:
         return "Rectangular Field Dimension Comparison"
     elif template_hint == "field_dimension.diamond":
         return "Diamond Field Dimension Comparison"
+    elif template_hint == "activity.maintenance_due_window":
+        return "Maintenance Due Window"
     return "Query Result"
 
 def _safe_get_field(row: Dict[str, Any], *names: str):
@@ -608,6 +724,11 @@ def _generate_sql_summary(rows: List[Dict], template_hint: Optional[str], slots:
         return f"### 📏 Field Dimension Comparison\n\nComparing dimensions for **{len(rows)} rectangular fields**."
     elif template_hint == "field_dimension.diamond":
         return f"### 📐 Field Dimension Comparison\n\nComparing dimensions for **{len(rows)} diamond fields**."
+    elif template_hint == "activity.maintenance_due_window":
+        weeks = slots.get("weeks_ahead")
+        activity_name = (slots.get("activity_name") or "maintenance").title()
+        window_text = f"the next {weeks} week(s)" if weeks else "the requested window"
+        return f"### 🛠 Maintenance Window Check\n\nEvaluated **{len(rows)}** park(s) for **{activity_name}** over {window_text}."
     return f"### Results\n\nFound **{len(rows)} records**."
 
 def _detect_chart_type(rows: List[Dict], template_hint: Optional[str] = None) -> Optional[Dict[str, Any]]:
@@ -692,6 +813,23 @@ def _detect_chart_type(rows: List[Dict], template_hint: Optional[str] = None) ->
                 "sort_by": "date",
                 "sort_order": "desc"
             }
+    elif template_hint == "activity.maintenance_due_window":
+        if "location" in columns and "last_service_date" in columns:
+            return {
+                "type": "timeline",
+                "title": "Last Service Date by Park",
+                "data": [
+                    {
+                        "park": row.get("location"),
+                        "date": row.get("last_service_date"),
+                        "days_since": row.get("days_since_last"),
+                        "status": row.get("due_status")
+                    }
+                    for row in rows
+                ],
+                "sort_by": "date",
+                "sort_order": "desc"
+            }
 
     return None
 
@@ -708,3 +846,138 @@ def _generate_chart_description(chart_config: Dict[str, Any], rows: List[Dict]) 
     elif chart_type == "timeline":
         return f"Timeline of last mowing dates for {len(rows)} park(s)"
     return ""
+# ========== Specific SQL template helpers: maintenance due window ==========
+def _safe_float(value: Any) -> Optional[float]:
+    try:
+        if value is None:
+            return None
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+def _annotate_due_rows(
+    rows: List[Dict[str, Any]],
+    cycle_days: Optional[float],
+    weeks_ahead: Optional[int]
+) -> Tuple[List[Dict[str, Any]], Dict[str, List[Dict[str, Any]]], Optional[float]]:
+    """
+    Add due status metadata to each row for maintenance window analysis.
+    """
+    if not rows:
+        return rows, {}, None
+
+    annotated: List[Dict[str, Any]] = []
+    groups = {"overdue": [], "due": [], "recent": [], "unknown": []}
+
+    horizon_days = _safe_float(rows[0].get("horizon_days"))
+    if horizon_days is None and weeks_ahead:
+        try:
+            horizon_days = float(weeks_ahead) * 7.0
+        except (TypeError, ValueError):
+            horizon_days = None
+
+    for row in rows:
+        record = dict(row)
+        days_since = _safe_float(record.get("days_since_last"))
+        status = "unknown"
+        days_until_due = None
+        days_overdue = None
+
+        if cycle_days is not None and days_since is not None:
+            gap = cycle_days - days_since
+            if gap <= 0:
+                status = "overdue"
+                days_overdue = abs(gap)
+                days_until_due = 0.0
+            else:
+                if horizon_days is not None and gap <= horizon_days:
+                    status = "due soon"
+                else:
+                    status = "recent"
+                days_until_due = gap
+                days_overdue = 0.0
+
+        if cycle_days is not None:
+            record["recommended_cycle_days"] = round(cycle_days, 2)
+        if days_until_due is not None:
+            record["days_until_due"] = round(days_until_due, 1)
+        if days_overdue is not None:
+            record["days_overdue"] = round(days_overdue, 1)
+        record["due_status"] = status
+        record["horizon_days"] = horizon_days
+        annotated.append(record)
+
+        group_key = "unknown"
+        if status == "overdue":
+            group_key = "overdue"
+        elif status == "due soon":
+            group_key = "due"
+        elif status == "recent":
+            group_key = "recent"
+        groups.setdefault(group_key, []).append(record)
+
+    return annotated, groups, horizon_days
+
+def _format_due_window_summary(
+    groups: Dict[str, List[Dict[str, Any]]],
+    horizon_days: Optional[float],
+    activity_context: Dict[str, Any],
+    weeks_ahead: Optional[int]
+) -> str:
+    if not groups:
+        return ""
+
+    lines: List[str] = []
+    freq = activity_context.get("frequency")
+    cycle = activity_context.get("cycle_days")
+    if freq:
+        freq_line = f"**Reference frequency:** {freq}"
+        if cycle:
+            freq_line += f" (~every {cycle:.1f} days)"
+        lines.append(freq_line)
+    elif cycle:
+        lines.append(f"**Reference frequency:** ~every {cycle:.1f} days")
+
+    if horizon_days:
+        weeks = horizon_days / 7.0
+        window = weeks_ahead or round(weeks, 1)
+        lines.append(f"**Planning window:** next {window} week(s) (~{horizon_days:.0f} days)")
+
+    due_sections: List[str] = []
+    for key, label in (("overdue", "Overdue"), ("due", "Due within window")):
+        entries = groups.get(key) or []
+        if not entries:
+            continue
+        block = [f"**{label}:**"]
+        for rec in entries[:6]:
+            park = rec.get("location") or rec.get("park") or "Unknown park"
+            last_dt = rec.get("last_service_date") or "unknown date"
+            days_since = rec.get("days_since_last")
+            if days_since is not None:
+                try:
+                    days_since = float(days_since)
+                except (TypeError, ValueError):
+                    pass
+            detail = f"- {park}: last serviced {last_dt}"
+            if isinstance(days_since, (int, float)):
+                detail += f" ({days_since:.1f} days ago)"
+            if key == "overdue":
+                overdue = rec.get("days_overdue")
+                if isinstance(overdue, (int, float)) and overdue > 0:
+                    detail += f", overdue by {overdue:.1f} day(s)"
+            else:
+                until = rec.get("days_until_due")
+                if isinstance(until, (int, float)):
+                    detail += f", due in ~{until:.1f} day(s)"
+            block.append(detail)
+        due_sections.append("\n".join(block))
+
+    if not due_sections and groups.get("recent"):
+        lines.append("All tracked parks are outside the requested window based on current records.")
+    elif not due_sections and groups.get("unknown"):
+        lines.append("Frequency reference was found but existing records are insufficient to determine upcoming needs.")
+
+    if due_sections:
+        lines.append("\n\n".join(due_sections))
+
+    return "\n\n".join(lines).strip()

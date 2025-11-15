@@ -21,6 +21,8 @@ def _infer_category_from_path(path: str) -> str:
       - 'sport_field_standard.pdf' -> 'field'
     """
     n = os.path.basename(path).lower()
+    if any(x in n for x in ["activity", "frequency", "maint", "maintenance"]):
+        return "activity"
     if any(x in n for x in ["mowing", "turf", "grass", "lawn"]):
         return "mowing"
     if any(x in n for x in ["sport", "field", "soccer", "baseball", "softball", "rugby", "football"]):

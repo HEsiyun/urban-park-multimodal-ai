@@ -48,7 +48,8 @@ INTENT_PROTOTYPES = {
         "Explain July YOY change in mowing costs using recommended mowing intervals.",
         "Calculate the differences in dimensions of a [shape] field for [sport]",
         "What are the differences for the diamond fields for Softball Female - U17",
-        "What are the differences for the rectangular fields for U12 and U14?"
+        "Which parks need mowing in 2 weeks?",
+        "Which parks need irrigation checks in 4 weeks?"
     ],
 
     # RAG+CV_tool: image + textual knowledge (needs references/explanations)
@@ -95,7 +96,7 @@ _SQL_EXPLAIN_CUES = [
 # but do not explicitly request explanations.
 _SQL_GENERAL_CUES = [
     "trend", "compare", "median", "top", "highest", "max",
-    "yoy", "year over year", "last", "recent", "rank", "breakdown"
+    "yoy", "year over year", "last", "recent", "latest", "rank", "breakdown"
 ]
 
 # Informational textual guidance cues (only used when not SQL-intent)
@@ -265,6 +266,25 @@ def _parse_activity_name(text: str) -> Optional[str]:
             continue
         if keyword in t:
             return keyword
+    return None
+
+def _parse_weeks_ahead(text: str) -> Optional[int]:
+    """Extract horizon like 'in 2 weeks' or 'within 3 weeks'."""
+    if not text:
+        return None
+    t = _normalize(text)
+    m = re.search(r"(?:in|within|over)\s+(\d+)\s+week", t)
+    if m:
+        try:
+            return int(m.group(1))
+        except ValueError:
+            return None
+    m = re.search(r"next\s+(\d+)\s+week", t)
+    if m:
+        try:
+            return int(m.group(1))
+        except ValueError:
+            return None
     return None
 
 def _parse_sport(text: str) -> Optional[Dict[str, Any]]:
@@ -562,6 +582,7 @@ def parse_intent_and_slots(
     park_name = _parse_park_name(query)
     month1, month2, year1, year2 = _parse_cross_year_month_range(query) # least cost for a period
     activity_name = _parse_activity_name(query)
+    weeks_ahead = _parse_weeks_ahead(query)
 
     slots = {
         "domain": domain,
@@ -578,6 +599,7 @@ def parse_intent_and_slots(
         "image_uri": image_uri,
         "explanation_requested": explanation_requested,  # used by planner
         "activity_name": activity_name,
+        "weeks_ahead": weeks_ahead,
     }
 
     # ----- LOGGING -----

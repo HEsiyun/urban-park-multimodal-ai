@@ -205,12 +205,21 @@ class ExecutionPlanner:
 
     # ========== RAG+SQL WORKFLOW ==========
     def _plan_rag_sql(self, nlu_result: NLUResult) -> ExecutionPlan:
-        if nlu_result.slots.get("domain") == "field_dimension":
+        """
+        Entry for hybrid RAG+SQL workflow.
+        Dispatches by domain to keep per-domain logic clear.
+        """
+        domain = nlu_result.slots.get("domain")
+
+        if domain == "field_dimension":
             return self._plan_rag_sql_fields(nlu_result)
-        else:
-            return self._plan_rag_sql_mowing(nlu_result)
+        if domain == "activity":
+            return self._plan_rag_sql_activity(nlu_result)
+        # default / mowing and other SQL-toolable ops
+        return self._plan_rag_sql_mowing(nlu_result)
+
     def _plan_rag_sql_mowing(self, nlu_result: NLUResult) -> ExecutionPlan:
-        """Plan hybrid RAG+SQL workflow"""
+        """Plan hybrid RAG+SQL workflow for mowing domain"""
         slots = nlu_result.slots
         query = nlu_result.raw_query
 
@@ -236,11 +245,54 @@ class ExecutionPlanner:
 
         # RAG retrieval keywords for context (kept lightweight)
         rag_keywords = "mowing maintenance cost frequency staffing inspection policy standards"
-        kb_filters = None
-        if slots.get("domain") == "activity":
-            base_kw = slots.get("activity_name") or "maintenance activity"
-            rag_keywords = f"{base_kw} frequency interval guidelines maintenance"
-            kb_filters = {"category": "activity"}
+
+        tool_chain: List[Dict[str, Any]] = []
+        if not clarifications:
+            tool_chain = [
+                {"tool": "kb_retrieve", "args": {"query": rag_keywords, "top_k": 3}},
+                {"tool": "sql_query_rag", "args": {"template": template, "params": params}}
+            ]
+
+        return ExecutionPlan(
+            tool_chain=tool_chain,
+            clarifications=clarifications,
+            metadata={
+                "workflow": "RAG+SQL",
+                "template": template,
+                "status": "OK" if not clarifications else "NEEDS_CLARIFICATION",
+                "explanation_requested": bool(slots.get("explanation_requested"))
+            }
+        )
+    
+    def _plan_rag_sql_activity(self, nlu_result: NLUResult) -> ExecutionPlan:
+        """Plan hybrid RAG+SQL workflow for activity domain"""
+        slots = nlu_result.slots
+        query = nlu_result.raw_query
+
+        # SQL template routing first (if unsupported, bail out)
+        template = self._route_sql_template(query, slots)
+        if not template:
+            return ExecutionPlan(
+                tool_chain=[],
+                clarifications=[],
+                metadata={"workflow": "RAG+SQL", "status": "UNSUPPORTED", "reason": "NO_TEMPLATE_MATCH"}
+            )
+
+        template_config = self.sql_templates.get(template)
+        if not template_config:
+            return ExecutionPlan(
+                tool_chain=[],
+                clarifications=[],
+                metadata={"workflow": "RAG+SQL", "status": "UNSUPPORTED", "reason": f"UNREGISTERED_TEMPLATE:{template}"}
+            )
+
+        params = template_config["builder"](slots)
+        clarifications = self._validate_params(template, params, template_config)
+
+        # Activity-specific RAG context
+        base_kw = slots.get("activity_name") or "maintenance activity"
+        rag_keywords = f"{base_kw} frequency interval guidelines maintenance"
+        kb_filters = {"category": "activity"}
 
         tool_chain: List[Dict[str, Any]] = []
         if not clarifications:
@@ -256,7 +308,8 @@ class ExecutionPlanner:
                 "workflow": "RAG+SQL",
                 "template": template,
                 "status": "OK" if not clarifications else "NEEDS_CLARIFICATION",
-                "explanation_requested": bool(slots.get("explanation_requested"))
+                "explanation_requested": bool(slots.get("explanation_requested")),
+                "domain": "activity",
             }
         )
     

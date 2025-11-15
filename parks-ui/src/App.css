@@ -581,6 +581,14 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
+.timeline-scroll {
+  padding: 20px 0;
+  max-height: 360px;       /* adjust as needed */
+  overflow-y: auto;
+  padding-right: 12px;     /* keeps scrollbar off the text */
+}
+
+
 /* ========== Image Upload ========== */
 .thumb {
   height: 60px;

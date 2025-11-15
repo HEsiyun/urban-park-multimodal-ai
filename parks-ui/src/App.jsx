@@ -380,7 +380,7 @@ export default function App() {
     });
 
     return (
-      <div style={{ padding: "20px 0" }}>
+      <div className="timeline-scroll">
         {sortedData.map((item, idx) => (
           <div
             key={idx}

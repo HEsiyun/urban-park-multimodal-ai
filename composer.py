@@ -28,7 +28,7 @@ _MOWING_METRIC_PATTERNS = [
     ("weed_tolerance_pct", r"weed\s*tolerance.*?<\s*(\d+)\s*%", lambda s: s),
     ("bare_ground_pct", r"bare\s*ground.*?<\s*(\d+)\s*%", lambda s: s),
 ]
-
+# extract mowing standards from text snippets
 def _extract_mowing_standards_from_text(text: str) -> dict:
     found: Dict[str, str] = {}
     t = " ".join(line.strip() for line in (text or "").splitlines() if line.strip())
@@ -52,7 +52,7 @@ def _extract_mowing_standards_from_hits(hits: List[Dict[str, Any]]) -> dict:
             if v and k not in merged:
                 merged[k] = v
     return merged
-
+# extract activity frequency from text snippets
 def _extract_activity_frequency_from_hits(
     hits: List[Dict[str, Any]], activity_name: Optional[str]
 ) -> Dict[str, Any]:
@@ -129,42 +129,12 @@ def _estimate_cycle_days_from_text(text: Optional[str]) -> Optional[float]:
         return 1.0
     return None
 
+    # （删除了重复的 mowing 标准提取代码段）
+    # 这里原本是一段与前面完全相同的 _MOWING_METRIC_PATTERNS /
+    # _extract_mowing_standards_from_text / _extract_mowing_standards_from_hits 实现，
+    # 会导致函数和常量重复定义。保留文件前面那一份即可，这里安全删除。
 
-# ========= Lightweight standards extraction (works well with short TXT standards) =========
-_MOWING_METRIC_PATTERNS = [
-    ("grass_length_cm", r"grass\s*length.*?(\d+\s*-\s*\d+)\s*cm", lambda s: s.replace(" ", "")),
-    ("cutting_height_cm", r"cutting\s*height.*?(\d+(?:\.\d+)?)\s*cm", lambda s: s),
-    ("drainage_max_hours", r"(?:percolation|standing\s*water).*?(\d+)\s*hour", lambda s: s),
-    ("mowing_frequency", r"every\s+(\d+)\s+working\s+days", lambda s: s),
-    ("weed_tolerance_pct", r"weed\s*tolerance.*?<\s*(\d+)\s*%", lambda s: s),
-    ("bare_ground_pct", r"bare\s*ground.*?<\s*(\d+)\s*%", lambda s: s),
-]
-
-def _extract_mowing_standards_from_text(text: str) -> dict:
-    found: Dict[str, str] = {}
-    t = " ".join(line.strip() for line in (text or "").splitlines() if line.strip())
-    for key, pat, norm in _MOWING_METRIC_PATTERNS:
-        m = re.search(pat, t, flags=re.I)
-        if m:
-            try:
-                found[key] = norm(m.group(1))
-            except Exception:
-                found[key] = m.group(1)
-    return found
-
-def _extract_mowing_standards_from_hits(hits: List[Dict[str, Any]]) -> dict:
-    merged: Dict[str, str] = {}
-    for h in hits[:3]:
-        snippet = h.get("text", "") or ""
-        if not snippet:
-            continue
-        cur = _extract_mowing_standards_from_text(snippet)
-        for k, v in cur.items():
-            if v and k not in merged:
-                merged[k] = v
-    return merged
-
-
+# ========= RAG Context Summarization, with Fallback ==========
 def _summarize_rag_context(
     rag_snippets: List[Dict[str, Any]],
     query: str,
@@ -347,7 +317,7 @@ def _snip(txt: str, n: int = 150) -> str:
     s = re.sub(r"\s+", " ", (txt or "")).strip()
     return (s[:n] + "...") if len(s) > n else s
 
-
+# ========== Main Composition Function being called externally ==========
 def compose_answer(
     nlu: Dict[str, Any],
     state: Dict[str, Any],
@@ -493,9 +463,15 @@ def compose_answer(
         sql = ev.get("sql", {})
         rows = sql.get("rows") or []
 
+        # Base data used by all SQL templates
         annotated_rows = rows
         due_groups: Dict[str, List[Dict[str, Any]]] = {}
-        horizon_days = None
+        horizon_days: Optional[float] = None
+
+        # ---- Template-specific enrichments / annotations ----
+        # NOTE: When adding new SQL templates that need extra processing,
+        #       follow this pattern and keep all template-specific logic
+        #       in this section, before charts/tables/summary.
         if template_hint == "activity.maintenance_due_window":
             annotated_rows, due_groups, horizon_days = _annotate_due_rows(
                 rows,
@@ -503,6 +479,12 @@ def compose_answer(
                 slots.get("weeks_ahead")
             )
 
+        # TODO: add more template-specific post-processing here as needed
+        # e.g.
+        # elif template_hint == "some.new_template":
+        #     annotated_rows = _post_process_new_template(rows, slots)
+
+        # ---- Generic chart + table generation (template-agnostic) ----
         chart_config = _detect_chart_type(annotated_rows, template_hint)
         if chart_config:
             charts.append(chart_config)
@@ -514,8 +496,10 @@ def compose_answer(
                 "rows": annotated_rows
             })
 
+        # ---- Generic SQL summary generation ----
         sql_summary = _generate_sql_summary(annotated_rows, template_hint, slots)
 
+        # ---- Template-specific summary augmentations ----
         if template_hint == "activity.maintenance_due_window":
             due_md = _format_due_window_summary(
                 due_groups,
@@ -526,12 +510,20 @@ def compose_answer(
             if due_md:
                 sql_summary += "\n\n" + due_md
 
+        # TODO: add more template-specific summary extensions here
+        # e.g.
+        # elif template_hint == "some.new_template":
+        #     sql_summary += "\n\n" + _extra_summary_for_new_template(annotated_rows)
+
+        # ---- Final answer composition for SQL part ----
         if answer_md:
             answer_md += "\n\n"
 
         answer_md += sql_summary
-        answer_md += f"\n\n**Query Performance**: {sql.get('rowcount',0)} rows in {sql.get('elapsed_ms',0)}ms"
-        
+        answer_md += (
+            f"\n\n**Query Performance**: "
+            f"{sql.get('rowcount', 0)} rows in {sql.get('elapsed_ms', 0)}ms"
+        )
         # 伪造RAG hits以供后续处理
         if intent == "SQL_tool_2":
             ev["kb_hits"] = [{"page": "1", "text": "Criteria For Softball Female - U17: Dimension Home to Pitchers Plate should be greater than 12.9m and less than 13.42m; Home to First Base Path should be greater than 17.988m and less than 18.588m"}]
@@ -854,7 +846,7 @@ def _generate_chart_description(chart_config: Dict[str, Any], rows: List[Dict]) 
     elif chart_type == "timeline":
         return f"Timeline of last mowing dates for {len(rows)} park(s)"
     return ""
-
+# ========== Specific SQL template helpers: maintenance due window ==========
 def _safe_float(value: Any) -> Optional[float]:
     try:
         if value is None:

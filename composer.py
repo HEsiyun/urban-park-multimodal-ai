@@ -28,6 +28,7 @@ _MOWING_METRIC_PATTERNS = [
     ("weed_tolerance_pct", r"weed\s*tolerance.*?<\s*(\d+)\s*%", lambda s: s),
     ("bare_ground_pct", r"bare\s*ground.*?<\s*(\d+)\s*%", lambda s: s),
 ]
+
 # extract mowing standards from text snippets
 def _extract_mowing_standards_from_text(text: str) -> dict:
     found: Dict[str, str] = {}
@@ -52,6 +53,7 @@ def _extract_mowing_standards_from_hits(hits: List[Dict[str, Any]]) -> dict:
             if v and k not in merged:
                 merged[k] = v
     return merged
+
 # extract activity frequency from text snippets
 def _extract_activity_frequency_from_hits(
     hits: List[Dict[str, Any]], activity_name: Optional[str]
@@ -384,11 +386,16 @@ def compose_answer(
         kb_hits = ev.get("kb_hits", []) or []
         sop = ev.get("sop", {}) or {}
 
-        combined_text = " ".join([h.get("text", "")[:300] for h in kb_hits[:2]]).lower()
-        is_mowing_query = any(k in combined_text for k in [
-            "mowing", "cutting height", "grass length", "drainage",
-            "inspection", "frequency", "weed tolerance", "bare ground"
-        ])
+        domain = slots.get("domain", "generic")
+        query_text = (user_query or "").lower()
+
+        is_mowing_query = (
+            domain == "mowing"
+            or any(k in query_text for k in [
+                "mowing", "mow", "turf", "grass", "lawn",
+                "cutting height", "grass length"
+            ])
+        )
 
         standards = _extract_mowing_standards_from_hits(kb_hits) if kb_hits else {}
         rag_section_added = False
@@ -846,6 +853,7 @@ def _generate_chart_description(chart_config: Dict[str, Any], rows: List[Dict]) 
     elif chart_type == "timeline":
         return f"Timeline of last mowing dates for {len(rows)} park(s)"
     return ""
+
 # ========== Specific SQL template helpers: maintenance due window ==========
 def _safe_float(value: Any) -> Optional[float]:
     try:

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Query Response Examples</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            color: #333;
+            line-height: 1.5;
+        }
+        
+        h2 {
+            text-align: center;
+            color: #1a1a1a;
+            font-size: 24px;
+            margin-bottom: 30px;
+            font-weight: normal;
+        }
+        
+        .table-caption {
+            font-weight: bold;
+            margin-top: 30px;
+            margin-bottom: 10px;
+            color: #1a1a1a;
+            font-size: 14px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 35px;
+            font-size: 11px;
+            background-color: white;
+        }
+        
+        th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: bold;
+            border: 1px solid #34495e;
+            vertical-align: top;
+        }
+        
+        td {
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            vertical-align: top;
+            line-height: 1.4;
+        }
+        
+        .classification-col {
+            width: 12%;
+            font-weight: bold;
+            color: #2c3e50;
+            background-color: #f8f9fa;
+        }
+        
+        .query-col {
+            width: 20%;
+            font-style: italic;
+        }
+        
+        .response-col {
+            width: 68%;
+        }
+        
+        tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .note {
+            font-size: 11px;
+            color: #666;
+            font-style: italic;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h2>System Response Examples by Classification</h2>
+    
+    <div class="table-caption">Table 4: Sample Query-Response Pairs by Tool Classification</div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Classification</th>
+                <th>Query</th>
+                <th>Response</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="classification-col">RAG + CV_tool</td>
+                <td class="query-col">[Image uploaded]<br><br>Assess this field condition and tell me the mowing standard</td>
+                <td class="response-col">
+                    <strong>Workflow:</strong> RAG+CV_tool<br><br>
+                    <strong>Maintenance Standards Summary:</strong> Mowing frequency: every 10 working days<br><br>
+                    <strong>Image Assessment:</strong> Condition: Fair (score 6.50). Issues: Uneven surface with some bare patches, faded line markings, moderate water pooling in certain areas. Recommendations: Aeration and overseeding to improve turf density; repainting of line markings; improving drainage to prevent water pooling.<br><br>
+                    <strong>Mowing Standard for Field Condition:</strong> Based on the reference documents: Grass length varies by season (Growing Season: 5-10 cm; Non-Growing Season: 1-3 cm). Cutting height can be inferred from the "Cutting height" category in Source 1. Other thresholds (root depth, bare ground, weed tolerance, turf health, surface consistency, drainage) are not specified.<br><br>
+                    <strong>Important Safety/Operational Notes:</strong> The reference documents do not provide specific safety or operational notes for mowing, but it is essential to follow general best practices for safe and efficient field maintenance.<br><br>
+                    <em>Citations: Maintenance Standards — /Users/siyunhe/Desktop/neu/capstone/capstone_mvp/data/rag_docs/mowing_standard.txt#p1</em>
+                </td>
+            </tr>
+            <tr>
+                <td class="classification-col">CV_tool</td>
+                <td class="query-col">[Image uploaded]<br><br>Assess this field condition</td>
+                <td class="response-col">
+                    <strong>Workflow:</strong> CV_tool<br><br>
+                    <strong>Image Assessment:</strong> Condition: Fair (score 6.50). Issues: Uneven surface with some bare patches, faded line markings, minor water pooling. Recommendations: Aeration and overseeding; repainting of line markings; improved drainage.
+                </td>
+            </tr>
+            <tr>
+                <td class="classification-col">RAG + SQL_tool</td>
+                <td class="query-col">When was the last mowing at Cambridge Park and what is the mowing requirement?</td>
+                <td class="response-col">
+                    <strong>Workflow:</strong> RAG+SQL_tool • Template: mowing.last_mowing_date<br><br>
+                    <strong>Maintenance Standards Summary:</strong> Mowing frequency: every 10 working days<br><br>
+                    <strong>📅 Last Mowing Activity:</strong><br>
+                    <em>[System generates visual card and data table - see Figure X]</em><br>
+                    RFT- Cambridge Pk PTurf Mow/Maint was last mowed on 2025-06-03 00:00:00; sessions: 7; total cost: $431.56. Query Performance: 1 rows in 18 ms<br><br>
+                    <strong>Context for Last Mowing Activity:</strong> The last mowing activity at Cambridge Park occurred on June 3, 2025, which falls within the standard schedule of every 10 working days as outlined in both Source 1 (Grade A) and Source 2 (# Mowing and Horticulture Maintenance Standards). The total cost of $431.56 is consistent with typical ranges mentioned in these documents, where costs are not explicitly quantified but can be inferred to be within a reasonable budget for park maintenance.<br><br>
+                    <em>Citations: Maintenance Standards — /Users/siyunhe/Desktop/neu/capstone/capstone_mvp/data/rag_docs/mowing_standard.txt#p1</em>
+                </td>
+            </tr>
+            <tr>
+                <td class="classification-col">SQL_tool</td>
+                <td class="query-col">Compare mowing costs across all parks in March 2025</td>
+                <td class="response-col">
+                    <strong>Workflow:</strong> SQL_tool • Template: mowing.cost_by_park_month<br><br>
+                    <strong>📊 Cost Comparison:</strong><br>
+                    <em>[System generates bar chart and data table - see Figure Y]</em><br>
+                    21 parks with combined costs of $11,435.95. Query Performance: 21 rows in 21 ms
+                </td>
+            </tr>
+            <tr>
+                <td class="classification-col">RAG</td>
+                <td class="query-col">What are the dimensions for U15 soccer?</td>
+                <td class="response-col">
+                    <strong>Workflow:</strong> RAG<br><br>
+                    <strong>Reference Summary - U15 Soccer Field Dimensions:</strong> According to the reference documents: The standard dimensions for U15 soccer fields are not explicitly stated, but we can refer to the dimensions of smaller age groups: For U7-U8, the recommended width is 18-22 meters and length is 25-30 meters. For U10-U11, the recommended dimensions are not specified, but a larger field (90m x 45m) can accommodate multiple games simultaneously with temporary markings.<br><br>
+                    <strong>Baseball/Softball Field Dimensions for U15:</strong> A field with 18.3m base paths and adjustable pitching rubber can serve: Softball Male U15-Masters by adjusting the pitcher's plate; Softball Female multiple divisions; Baseball U10-U11.<br><br>
+                    <strong>Important Notes:</strong> There are no specific dimensions mentioned for U15 soccer in the reference documents. However, we can refer to the dimensions of smaller age groups and larger fields that can accommodate multiple games simultaneously. The use of adjustable pitching rubber allows for flexibility in accommodating different age groups and divisions.<br><br>
+                    <em>Citations: Maintenance Standards — /Users/siyunhe/Desktop/neu/capstone/capstone_mvp/data/rag_docs/field_standards.txt#p1</em>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div class="note">Note: Additional classification examples will be added to demonstrate the full range of system capabilities across all five tool combinations.</div>
+
+</body>
+</html>

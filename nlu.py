@@ -575,7 +575,11 @@ def parse_intent_and_slots(
     # ----- STEP 5: Slot Filling (NER-lite) -----
     domain = _detect_domain(query)
     if domain == "field_dimension":
-        sport_info = _parse_sport(query)
+        sport_info = _parse_sport(query) or {}
+        sport_info["domain"] = domain
+        if image_uri:
+            sport_info["image_uri"] = image_uri
+        sport_info["explanation_requested"] = explanation_requested
         return NLUResult(
             intent=intent,
             confidence=round(confidence, 3),

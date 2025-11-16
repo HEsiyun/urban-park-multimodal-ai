@@ -212,7 +212,9 @@ def agent_answer_endpoint(req: AgentRequest):
             )
         else:
             nlu_result = parse_intent_and_slots(req.text, req.image_uri)
-        if nlu_result.slots["domain"] == "generic":
+        domain = nlu_result.slots.get("domain")
+        intent = nlu_result.intent
+        if domain == "generic" and "CV_tool" not in intent:
             return sql_fall_back(nlu_result.raw_query)
 
         print(f"[Agent] Intent: {nlu_result.intent} (confidence: {nlu_result.confidence})")

@@ -444,17 +444,22 @@ def _parse_cross_year_month_range(text: str) -> Tuple[Optional[int], Optional[in
 def _detect_domain(text: str) -> str:
     """Detect query domain: mowing / field_standards / generic."""
     t = _normalize(text)
-    if any(k in t for k in ["mowing", "mow", "turf", "grass", "lawn"]):
+    if any(k in t for k in [
+        "mowing", "mow", "turf", "grass", "lawn",
+        "cutting height", "grass length"
+    ]):
         return "mowing"
-    if any(k in t for k in _ACTIVITY_KEYWORDS):
-        return "activity"
-    elif any(k in t for k in ["dimension", "fields", "field", "dimensions"]):
+    if (any(k in t for k in ["dimension", "dimensions", "size", "length", "width"])
+            and any(k in t for k in ["field", "pitch", "court"])):
         return "field_dimension"
-    if any(k in t for k in ["soccer", "baseball", "softball", "cricket",
-                            "football", "rugby", "field", "dimensions",
-                            "pitching", "u10", "u11", "u12", "u13",
+    if any(k in t for k in ["soccer", "football", "rugby",
+                            "baseball", "softball", "cricket"]):
+        return "field_standards"
+    if any(k in t for k in ["u10", "u11", "u12", "u13",
                             "u14", "u15", "u16", "u17", "u18"]):
         return "field_standards"
+    if any(k in t for k in _ACTIVITY_KEYWORDS):
+        return "activity"
     return "generic"
 
 

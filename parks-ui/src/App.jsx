@@ -20,6 +20,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [resp, setResp] = useState(null);
   const [error, setError] = useState("");
+  const [e2eLatency, setE2eLatency] = useState(null);
 
   const presetCategories = [
     {
@@ -58,6 +59,10 @@ export default function App() {
     setLoading(true);
     setError("");
     setResp(null);
+    setE2eLatency(null);
+    
+    const startTime = performance.now();
+    
     try {
       const body = { text: text.trim() };
       if (imageUri) body.image_uri = imageUri;
@@ -78,8 +83,16 @@ export default function App() {
       }
 
       const data = await r.json();
+      const endTime = performance.now();
+      const latencyMs = endTime - startTime;
+      
+      setE2eLatency(latencyMs);
       setResp(data);
+      
+      console.log(`⏱️ End-to-end latency: ${latencyMs.toFixed(2)} ms (${(latencyMs/1000).toFixed(2)}s)`);
     } catch (e) {
+      const endTime = performance.now();
+      setE2eLatency(endTime - startTime);
       setError(e.message || String(e));
     } finally {
       setLoading(false);
@@ -496,9 +509,148 @@ export default function App() {
 
   function LogsView({ logs }) {
     if (!logs || !logs.length) return null;
+    
+    // Calculate total time and tool call time
+    const totalToolTime = logs.reduce((sum, l) => sum + (l.elapsed_ms || 0), 0);
+    const successCount = logs.filter(l => l.ok).length;
+    const failCount = logs.filter(l => !l.ok).length;
+    
+    // Calculate network/overhead time
+    const networkTime = e2eLatency ? e2eLatency - totalToolTime : null;
+    const networkPercent = e2eLatency ? (networkTime / e2eLatency * 100) : null;
+    const toolPercent = e2eLatency ? (totalToolTime / e2eLatency * 100) : null;
+    
     return (
       <div className="mt">
-        <div className="label">Logs</div>
+        <div className="label">⏱️ Performance Metrics</div>
+        
+        {/* Summary Stats */}
+        <div style={{
+          display: 'flex',
+          gap: 12,
+          marginBottom: 16,
+          flexWrap: 'wrap'
+        }}>
+          <div style={{
+            padding: '12px 16px',
+            background: '#e3f2fd',
+            borderRadius: 8,
+            flex: '1 1 auto',
+            minWidth: 150
+          }}>
+            <div style={{ fontSize: 11, color: '#1565c0', fontWeight: 600, marginBottom: 4 }}>
+              TOTAL TOOL TIME
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#0d47a1' }}>
+              {(totalToolTime / 1000).toFixed(2)}s
+            </div>
+            <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>
+              {totalToolTime.toFixed(0)} ms
+              {toolPercent && ` · ${toolPercent.toFixed(1)}% of E2E`}
+            </div>
+          </div>
+          
+          <div style={{
+            padding: '12px 16px',
+            background: '#f3e5f5',
+            borderRadius: 8,
+            flex: '1 1 auto',
+            minWidth: 150
+          }}>
+            <div style={{ fontSize: 11, color: '#7b1fa2', fontWeight: 600, marginBottom: 4 }}>
+              TOOL CALLS
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#4a148c' }}>
+              {logs.length}
+            </div>
+            <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>
+              ✅ {successCount} success · ❌ {failCount} failed
+            </div>
+          </div>
+          
+          <div style={{
+            padding: '12px 16px',
+            background: '#fff3e0',
+            borderRadius: 8,
+            flex: '1 1 auto',
+            minWidth: 150
+          }}>
+            <div style={{ fontSize: 11, color: '#e65100', fontWeight: 600, marginBottom: 4 }}>
+              AVG PER TOOL
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#bf360c' }}>
+              {(totalToolTime / logs.length / 1000).toFixed(2)}s
+            </div>
+            <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>
+              {(totalToolTime / logs.length).toFixed(0)} ms
+            </div>
+          </div>
+          
+          {networkTime !== null && (
+            <div style={{
+              padding: '12px 16px',
+              background: '#e8f5e9',
+              borderRadius: 8,
+              flex: '1 1 auto',
+              minWidth: 150
+            }}>
+              <div style={{ fontSize: 11, color: '#2e7d32', fontWeight: 600, marginBottom: 4 }}>
+                NETWORK OVERHEAD
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#1b5e20' }}>
+                {(networkTime / 1000).toFixed(2)}s
+              </div>
+              <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>
+                {networkTime.toFixed(0)} ms
+                {networkPercent && ` · ${networkPercent.toFixed(1)}% of E2E`}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Time Breakdown Bar */}
+        {e2eLatency && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 6 }}>
+              TIME BREAKDOWN
+            </div>
+            <div style={{ 
+              display: 'flex', 
+              height: 32, 
+              borderRadius: 6, 
+              overflow: 'hidden',
+              border: '1px solid #e5e7eb'
+            }}>
+              <div style={{
+                width: `${toolPercent}%`,
+                background: 'linear-gradient(90deg, #3b82f6, #2563eb)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: 11,
+                fontWeight: 600
+              }}>
+                {toolPercent > 15 && `Tools: ${toolPercent.toFixed(1)}%`}
+              </div>
+              <div style={{
+                width: `${networkPercent}%`,
+                background: 'linear-gradient(90deg, #10b981, #059669)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: 11,
+                fontWeight: 600
+              }}>
+                {networkPercent > 15 && `Network: ${networkPercent.toFixed(1)}%`}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Detailed Logs */}
+        <div className="label" style={{ marginTop: 16, marginBottom: 8 }}>Tool Execution Details</div>
         <div className="logs">
           {logs.map((l, i) => (
             <div key={i} className="log-row">
@@ -506,7 +658,15 @@ export default function App() {
                 {l.ok ? "ok" : "err"}
               </span>
               <span className="mono">{l.tool}</span>
-              <span>({l.elapsed_ms} ms)</span>
+              <span style={{ 
+                fontWeight: 600,
+                color: l.elapsed_ms > 2000 ? '#ef4444' : l.elapsed_ms > 1000 ? '#f59e0b' : '#10b981'
+              }}>
+                {(l.elapsed_ms / 1000).toFixed(2)}s
+              </span>
+              <span className="muted" style={{ fontSize: 11 }}>
+                ({l.elapsed_ms} ms)
+              </span>
               <span className="muted">
                 args:{" "}
                 {Array.isArray(l.args_redacted)
@@ -811,6 +971,37 @@ export default function App() {
 
         <section className="card response-card">
           <div className="label">Response</div>
+          
+          {/* E2E Latency Banner */}
+          {e2eLatency && (
+            <div style={{
+              padding: '12px 16px',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              borderRadius: 8,
+              marginBottom: 16,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              color: 'white',
+              boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
+            }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.9, marginBottom: 4 }}>
+                  🚀 END-TO-END LATENCY
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 700 }}>
+                  {(e2eLatency / 1000).toFixed(2)}s
+                </div>
+              </div>
+              <div style={{ textAlign: 'right', fontSize: 12, opacity: 0.9 }}>
+                <div>{e2eLatency.toFixed(0)} ms</div>
+                <div style={{ fontSize: 10, marginTop: 2 }}>
+                  Frontend → Backend → Frontend
+                </div>
+              </div>
+            </div>
+          )}
+          
           {!resp && (
             <div className="muted">No response yet. Try a query above!</div>
           )}

@@ -89,23 +89,17 @@ export default function App() {
   function renderMarkdown(md) {
     if (!md) return null;
 
-    // Very lightweight markdown renderer (headings, bold, lists, paragraphs)
     let html = md;
 
-    // Headings
     html = html.replace(/^### (.*)$/gim, '<h3 class="md-h3">$1</h3>');
     html = html.replace(/^## (.*)$/gim, '<h2 class="md-h2">$1</h2>');
     html = html.replace(/^# (.*)$/gim, '<h1 class="md-h1">$1</h1>');
 
-    // Bold
     html = html.replace(/\*\*(.*?)\*\*/gim, "<strong>$1</strong>");
 
-    // Ordered lists
     html = html.replace(/^\d+\.\s+(.*)$/gim, "<li>$1</li>");
-    // Unordered lists
     html = html.replace(/^- (.*)$/gim, "<li>$1</li>");
 
-    // Convert blank lines to <br/><br/> to keep spacing
     html = html.replace(/\n\n+/g, "<br/><br/>");
 
     return <div className="prose" dangerouslySetInnerHTML={{ __html: html }} />;
@@ -535,7 +529,7 @@ export default function App() {
           <summary
             style={{ cursor: "pointer", fontWeight: 600, marginBottom: 8 }}
           >
-            🐛 Debug Information
+            🛠 Debug Information
           </summary>
         <div className="card" style={{ background: "#f8f9fa" }}>
             <pre className="json">{JSON.stringify(debug, null, 2)}</pre>
@@ -613,21 +607,69 @@ export default function App() {
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       const f = e.target.files?.[0];
                       if (!f) {
                         setImageUri("");
                         return;
                       }
-                      const url = URL.createObjectURL(f);
-                      setImageUri(url);
-                      setTimeout(() => {
-                        if (url.startsWith("blob:")) {
-                          console.info(
-                            "Note: backend cannot fetch blob: URLs directly. Consider adding an upload endpoint or using base64."
-                          );
-                        }
-                      }, 0);
+                      
+                      try {
+                        console.log("📸 Original file size:", (f.size / 1024 / 1024).toFixed(2), "MB");
+                        
+                        // ✅ Compress image before converting to base64
+                        const img = new Image();
+                        const reader = new FileReader();
+                        
+                        reader.onload = (e) => {
+                          img.src = e.target.result;
+                        };
+                        
+                        img.onload = () => {
+                          // Calculate new dimensions (max 1920px width/height)
+                          const MAX_SIZE = 1920;
+                          let width = img.width;
+                          let height = img.height;
+                          
+                          if (width > height) {
+                            if (width > MAX_SIZE) {
+                              height = (height * MAX_SIZE) / width;
+                              width = MAX_SIZE;
+                            }
+                          } else {
+                            if (height > MAX_SIZE) {
+                              width = (width * MAX_SIZE) / height;
+                              height = MAX_SIZE;
+                            }
+                          }
+                          
+                          // Create canvas and compress
+                          const canvas = document.createElement('canvas');
+                          canvas.width = width;
+                          canvas.height = height;
+                          const ctx = canvas.getContext('2d');
+                          ctx.drawImage(img, 0, 0, width, height);
+                          
+                          // Convert to base64 with quality setting
+                          const base64String = canvas.toDataURL('image/jpeg', 0.85);
+                          const sizeInMB = (base64String.length * 0.75 / 1024 / 1024).toFixed(2);
+                          
+                          console.log("✅ Compressed to:", sizeInMB, "MB");
+                          console.log("📐 Dimensions:", width, "x", height);
+                          
+                          if (base64String.length * 0.75 > 5 * 1024 * 1024) {
+                            alert("⚠️ Image still too large after compression. Try a smaller image.");
+                            return;
+                          }
+                          
+                          setImageUri(base64String);
+                        };
+                        
+                        reader.readAsDataURL(f);
+                      } catch (error) {
+                        console.error("❌ Error processing image:", error);
+                        alert("Failed to process image: " + error.message);
+                      }
                     }}
                   />
                   📷 Upload Image

@@ -1,8 +1,26 @@
+# 🌿 Urban Park Multimodal AI System
 
-# 🌿 Parks Maintenance Intelligence System
+<p align="center">
+  <b>A production-ready, domain-grounded multimodal AI assistant for urban park inspection and maintenance</b>
+</p>
 
-A production-ready, **domain-adaptive multimodal AI system** for municipal park maintenance and asset management. The system integrates **NLU, RAG, SQL analytics, Vision–Language Models (VLM), and local LLM reasoning** within a four-stage orchestration pipeline to support data-driven inspection, maintenance planning, and operational decision-making.
-![System Architecture](new_design.png)
+<p align="center">
+  <img src="https://img.shields.io/badge/Multimodal-CV%2BRAG%2BSQL-brightgreen" />
+  <img src="https://img.shields.io/badge/LLM-LLaMA--3.2--3B%2FClaude-blue" />
+  <img src="https://img.shields.io/badge/Backend-FastAPI-orange" />
+  <img src="https://img.shields.io/badge/Frontend-React%20%2B%20Vite-purple" />
+  <img src="https://img.shields.io/badge/Status-Final%20Capstone-success" />
+</p>
+
+---
+
+## ✨ Overview
+
+This project presents an **end-to-end multimodal AI system for municipal urban park management**, capable of understanding **natural language**, **structured maintenance data**, **domain documents**, and **field images** within a unified orchestration framework. It supports intelligent **field inspection**, **maintenance decision-making**, and **cost analytics** through a tightly coupled **NLU → Planner → Executor → Composer** pipeline.
+
+> 🎓 Developed as the **Final Capstone Project** at Northeastern University (Vancouver, BC).
+>
+
 
 ---
 
@@ -19,6 +37,7 @@ A production-ready, **domain-adaptive multimodal AI system** for municipal park 
 ---
 
 ## 🧠 System Architecture
+![System Architecture](assets/new_design.png)
 
 The system follows a four-stage modular pipeline:
 
@@ -40,25 +59,24 @@ This design separates understanding, planning, execution, and presentation for m
 
 ## 🧩 Supported Query Types
 
-### 💰 Structured Analytics (SQL / RAG+SQL)
-- Mowing cost ranking and trends
-- Cost comparison by park and month
-- Last mowing activity tracking
-
-### 📋 Standards & Procedures (RAG)
-- Mowing steps and safety requirements
-- Soccer, baseball, and softball field dimensions
-- Sport-specific compliance checks
-
-### 🖼️ Image-Based Inspection (CV / RAG+CV)
-- Field condition scoring (1–10)
-- Turf health and surface defect detection
-- Maintenance recommendations
-- Safety hazard identification
+| Category             | Example Queries                                      | Pipeline      |
+| -------------------- | ---------------------------------------------------- | ------------- |
+| 💰 Cost Analytics    | "Which park has the highest mowing cost?"            | SQL / RAG+SQL |
+| 📋 Standards & SOP   | "What are soccer field size requirements?"           | RAG           |
+| 🖼️ Field Inspection | "Is this field suitable for soccer?"                 | CV / RAG+CV   |
+| 🧠 Hybrid Reasoning  | "Does this field need mowing based on cost & image?" | RAG+CV+SQL    |
 
 ---
+## 🏆 Key Contributions
 
-## 📊 Evaluation Highlights (from Final Report)
+- **First municipal-focused multimodal maintenance assistant** integrating CV, RAG, and SQL analytics into a single interpretable pipeline.
+- **Rule-guided orchestration over black-box agents**, enabling transparent, governance-ready execution.
+- **Domain-grounded retrieval framework** that transforms a general LLM into a standards-aligned decision assistant.
+- **Local-first deployment strategy** using FAISS, SQLite, and Ollama to achieve near-zero operational cost.
+- **End-to-end multimodal reasoning** that unifies visual inspection, structured analytics, and policy documents.
+---
+
+## 📊 Evaluation Highlights
 
 - **Intent Classification Accuracy**: 76% macro accuracy across 5 intent classes.
 - **SQL Template Correctness**: 100% verified correctness.
@@ -72,6 +90,14 @@ This design separates understanding, planning, execution, and presentation for m
 
 ---
 
+## 🔍 End-to-End Baseline Comparison
+
+> This comparison illustrates the qualitative gap between a general-purpose text-only LLM and our full multimodal, domain-grounded pipeline on the representative query: *“Is this field suitable for soccer?”*.
+
+- **Baseline (LLaMA-3.2-3B)**: Cannot process images; produces generic, non-standardized judgments without maintenance citations.
+- **Our System (CV + RAG + SQL)**: Integrates visual condition assessment with retrieved municipal standards to generate **actionable, citation-grounded recommendations**.
+![End-to-End Comparison](assets/e2e_comparison.png)
+---
 ## 🏗️ Project Structure
 
 ```text
